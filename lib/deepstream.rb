@@ -6,10 +6,43 @@ require 'timeout'
 module Deepstream end
 
 
+class Deepstream::Record
+
+  def initialize(client, name, data, version)
+    @client, @name, @data, @version = client, name, data, version
+  end
+
+  def set(*args)
+    if args.size == 1
+      @client._write('R', 'U', @name, (@version += 1), JSON.dump(args[0]))
+      @data = OpenStruct.new(args[0])
+    else
+      @client._write('R', 'P', @name, (@version += 1), args[0][0..-2], @client._typed(args[1]))
+    end
+  end
+
+  def _patch(version, field, value)
+    @version = version.to_i
+    @data[field] = value
+  end
+
+  def _update(version, data)
+    @version = version.to_i
+    @data = data
+  end
+
+  def method_missing(name, *args)
+    set(name, *args) if name[-1] == '='
+    @data.send(name, *args)
+  end
+
+end
+
+
 class Deepstream::Client
 
   def initialize(address, port = 6021)
-    @address, @port, @unread_msg, @event_callbacks = address, port, nil, {}
+    @address, @port, @unread_msg, @event_callbacks, @records = address, port, nil, {}, {}
   end
 
   def emit(event, value = nil)
@@ -17,12 +50,16 @@ class Deepstream::Client
   end
 
   def on(event, &block)
-    _write_and_read('E', 'S', event) { |msg| msg == %W{E A S #{event}} }
+    _write_and_read('E', 'S', event)
     @event_callbacks[event] = block
   end
 
+  def get(record_name)
+    _write_and_read('R', 'CR', record_name)
+    msg = _read
+    @records[record_name] = Deepstream::Record.new(self, record_name, _parse_data(msg[4]), msg[3].to_i)
+  end
 
-  private
   def _open_socket
     timeout(2) { @socket = TCPSocket.new(@address, @port) }
     Thread.start do
@@ -42,7 +79,7 @@ class Deepstream::Client
   def _write_and_read(*args)
     @unread_msg = nil
     _write(*args)
-    yield _read
+    yield _read if block_given?
   end
 
   def _write(*args)
@@ -53,11 +90,16 @@ class Deepstream::Client
   end
 
   def _process_msg(msg)
-    (msg[0..1] == %w{E EVT} ? _fire_event_callback(msg) : @unread_msg = msg) if msg
+    case msg[0..1]
+    when %w{E EVT} then _fire_event_callback(msg)
+    when %w{R P} then @records[msg[2]]._patch(msg[3], msg[4], _parse_data(msg[5]))
+    when %w{R U} then @records[msg[2]]._update(msg[3], _parse_data(msg[4]))
+    else @unread_msg = msg
+    end
   end
 
   def _read
-    loop { break @unread_msg || (next sleep(0.05)) }.tap { @unread_msg = nil }
+    loop { break @unread_msg || (next sleep 0.01) }.tap { @unread_msg = nil }
   end
 
   def _fire_event_callback(msg)
@@ -78,6 +120,7 @@ class Deepstream::Client
   def _parse_data(payload)
     case payload[0]
     when 'O' then JSON.parse(payload[1..-1], object_class: OpenStruct)
+    when '{' then JSON.parse(payload, object_class: OpenStruct)
     when 'S' then payload[1..-1]
     when 'N' then payload[1..-1].to_f
     when 'T' then true
