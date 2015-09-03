@@ -1,3 +1,7 @@
+# coding: utf-8
+# Copyright (c) 2015, Currency-One S.A.
+# This code is licensed under BSD 3-Clause license (see LICENSE for details)
+
 require 'socket'
 require 'json'
 require 'timeout'
