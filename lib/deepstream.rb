@@ -75,7 +75,7 @@ class Deepstream::Client
   end
 
   def _open_socket
-    timeout(2) { @socket = TCPSocket.new(@address, @port) }
+    Timeout.timeout(2) { @socket = TCPSocket.new(@address, @port) }
     Thread.start do
       loop { _process_msg(@socket.gets(30.chr).tap { |m| break m.chomp(30.chr).split(31.chr) if m }) }
     end
