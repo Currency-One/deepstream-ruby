@@ -5,12 +5,25 @@ deepstream.io ruby client
 ### Usage
 
 ```ruby
-ds_client = Deepstream::Client.new('localhost')
+ds = Deepstream::Client.new('localhost')
 
-ds_client.emit 'my_event'
+# Emit events
 
-ds_client.on('some_event') do |msg|
+ds.emit 'my_event'
+# or
+ds.emit 'my_event', foo: 'bar', bar: 'foo'
+
+
+# Subscribe to events
+ds.on('some_event') do |msg|
   puts msg
 end
-```
 
+
+# Get records
+foo = ds.get('foo')
+
+# Update record
+foo.bar = 'bar'
+
+```
