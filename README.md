@@ -25,5 +25,10 @@ foo = ds.get('foo')
 
 # Update record
 foo.bar = 'bar'
+# or
+foo.set('bar', 'bar')
+
+# Set whole record
+foo.set(foo: 'foo', bar: 1, )
 
 ```
