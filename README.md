@@ -2,13 +2,18 @@
 deepstream.io ruby client
 
 
-### Usage
+### Install
 
+```
+gem install deepstream
+```
+
+
+### Usage
 ```ruby
 ds = Deepstream::Client.new('localhost')
 
 # Emit events
-
 ds.emit 'my_event'
 # or
 ds.emit 'my_event', foo: 'bar', bar: 'foo'
@@ -20,7 +25,7 @@ ds.on('some_event') do |msg|
 end
 
 
-# Get records
+# Get a record
 foo = ds.get('foo')
 
 # Update record
@@ -28,7 +33,5 @@ foo.bar = 'bar'
 # or
 foo.set('bar', 'bar')
 
-# Set whole record
+# Set the whole record
 foo.set(foo: 'foo', bar: 1, )
-
-```
