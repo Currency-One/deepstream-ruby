@@ -118,7 +118,7 @@ class Deepstream::Client
   end
 
   def _fire_event_callback(msg)
-    @event_callbacks[msg[2]].tap { |cb| cb.(_parse_data(msg[3])) if cb }
+    @event_callbacks[msg[2]].tap { |cb| Thread.start { cb.(_parse_data(msg[3])) } if cb }
   end
 
   def _typed(value)

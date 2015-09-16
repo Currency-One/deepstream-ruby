@@ -4,7 +4,7 @@ $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 
 Gem::Specification.new do |spec|
   spec.name          = "deepstream"
-  spec.version       = "0.0.3"
+  spec.version       = "0.0.5"
   spec.authors       = ["Piotr Szczudlak"]
   spec.email         = ["thisredoned@gmail.com"]
 
