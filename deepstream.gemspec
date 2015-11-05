@@ -5,8 +5,8 @@ $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 Gem::Specification.new do |spec|
   spec.name          = "deepstream"
   spec.version       = "0.0.6"
-  spec.authors       = ["Piotr Szczudlak"]
-  spec.email         = ["thisredoned@gmail.com"]
+  spec.authors       = ["Currency-One S.A."]
+  spec.email         = ["piotr.szczudlak@currency-one.com"]
 
   spec.summary       = %q{deepstream.io ruby client}
   spec.description   = %q{Basic ruby client for the deepstream.io server}
