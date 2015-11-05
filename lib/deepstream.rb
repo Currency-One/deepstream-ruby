@@ -109,6 +109,7 @@ class Deepstream::Client
     when %w{R P} then @records[msg[2]]._patch(msg[3], msg[4], _parse_data(msg[5]))
     when %w{R U} then @records[msg[2]]._update(msg[3], _parse_data(msg[4]))
     when %w{R A} then @records.delete(msg[3]) if msg[2] == 'D'
+    when %w{E A} then nil
     else @unread_msg = msg
     end
   end
