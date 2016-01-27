@@ -69,9 +69,11 @@ class Deepstream::Client
   end
 
   def get(record_name)
-    _write_and_read('R', 'CR', record_name)
-    msg = _read
-    @records[record_name] = Deepstream::Record.new(self, record_name, _parse_data(msg[4]), msg[3].to_i)
+    @records[record_name] ||= (
+      _write_and_read('R', 'CR', record_name)
+      msg = _read
+      Deepstream::Record.new(self, record_name, _parse_data(msg[4]), msg[3].to_i)
+    )
   end
 
   def _open_socket
