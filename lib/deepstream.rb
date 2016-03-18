@@ -71,11 +71,15 @@ class Deepstream::List < Deepstream::Record
   end
 
   def all()
-    @data.map{|x| @client.getRecord(x)}
+    @data.map{ |x| @client.get(x) }
   end
 
   def keys()
     @data
+  end
+
+  def set(*args)
+    fail 'cannot use set on a list'
   end
 end
 
@@ -94,24 +98,24 @@ class Deepstream::Client
   end
 
   def get(record_name)
-    getRecord(record_name)
+    get_record(record_name)
   end
 
-  def getRecord(record_name, namespace=nil)
-    name = namespace ? "#{namespace}/#{record_name}" : record_name
+  def get_record(record_name, list: nil)
+    name = list ? "#{list}/#{record_name}" : record_name
     @records[name] ||= (
       _write_and_read('R', 'CR', name)
       msg = _read
       Deepstream::Record.new(self, name, _parse_data(msg[4]), msg[3].to_i)
     )
-    if namespace
-      @records[namespace] ||= getList(namespace)
-      @records[namespace].add(name)
+    if list
+      @records[list] ||= get_list(list)
+      @records[list].add(name)
     end
     @records[name]
   end
 
-  def getList(list_name)
+  def get_list(list_name)
     @records[list_name] ||= (
       _write_and_read('R', 'CR', list_name)
       msg = _read
@@ -121,7 +125,7 @@ class Deepstream::Client
 
   def delete(record_name)
     if matching = record_name.match(/(?<namespace>\w+)\/(?<record>.+)/)
-      tmp = getList(matching[:namespace])
+      tmp = get_list(matching[:namespace])
       tmp.remove(record_name)
     end
     _write('R', 'D', record_name)

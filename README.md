@@ -29,7 +29,7 @@ end
 foo = ds.get('foo')
 
 # Get a record with a namespace (automaticly add to a list)
-foo = ds.getRecord('foo', 'bar') # record can also be accessed by ds.get('bar/foo')
+foo = ds.get_record('foo', list: 'bar') # record can also be accessed by ds.get('bar/foo')
 
 # Update record
 foo.bar = 'bar'
@@ -40,7 +40,7 @@ foo.set('bar', 'bar')
 foo.set(foo: 'foo', bar: 1, )
 
 # Get a list
-foo = ds.getList('bar')
+foo = ds.get_list('bar')
 
 # Add to list
 foo.add('foo')
