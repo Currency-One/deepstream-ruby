@@ -55,7 +55,7 @@ end
 
 class Deepstream::List < Deepstream::Record
   def add(record_name)
-    if @data.class == Array
+    if @data.is_a?(Array)
       @data.push record_name unless @data.include? record_name
     else
       @data = [record_name]
@@ -70,11 +70,11 @@ class Deepstream::List < Deepstream::Record
     @data
   end
 
-  def all()
+  def all
     @data.map{ |x| @client.get(x) }
   end
 
-  def keys()
+  def keys
     @data
   end
 
