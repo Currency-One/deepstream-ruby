@@ -46,15 +46,40 @@ class Deepstream::Record
   end
 
   def method_missing(name, *args)
-    set(name, *args) if name[-1] == '='
-    @data.send(name, *args)
+    unless @data.class == Array
+      set(name, *args) if name[-1] == '='
+      @data.send(name, *args)
+    end
   end
-
 end
 
+class Deepstream::List < Deepstream::Record
+  def add(record_name)
+    if @data.class == Array
+      @data.push record_name unless @data.include? record_name
+    else
+      @data = [record_name]
+    end
+    @client._write('R', 'U', @name, (@version += 1), JSON.dump(@data))
+    @data
+  end
+
+  def remove(record_name)
+    @data.delete_if { |x| x == record_name }
+    @client._write('R', 'U', @name, (@version += 1), JSON.dump(@data))
+    @data
+  end
+
+  def all()
+    @data.map{|x| @client.getRecord(x)}
+  end
+
+  def keys()
+    @data
+  end
+end
 
 class Deepstream::Client
-
   def initialize(address, port = 6021)
     @address, @port, @unread_msg, @event_callbacks, @records = address, port, nil, {}, {}
   end
@@ -69,11 +94,37 @@ class Deepstream::Client
   end
 
   def get(record_name)
-    @records[record_name] ||= (
-      _write_and_read('R', 'CR', record_name)
+    getRecord(record_name)
+  end
+
+  def getRecord(record_name, namespace=nil)
+    name = namespace ? "#{namespace}/#{record_name}" : record_name
+    @records[name] ||= (
+      _write_and_read('R', 'CR', name)
       msg = _read
-      Deepstream::Record.new(self, record_name, _parse_data(msg[4]), msg[3].to_i)
+      Deepstream::Record.new(self, name, _parse_data(msg[4]), msg[3].to_i)
     )
+    if namespace
+      @records[namespace] ||= getList(namespace)
+      @records[namespace].add(name)
+    end
+    @records[name]
+  end
+
+  def getList(list_name)
+    @records[list_name] ||= (
+      _write_and_read('R', 'CR', list_name)
+      msg = _read
+      Deepstream::List.new(self, list_name, _parse_data(msg[4]), msg[3].to_i)
+    )
+  end
+
+  def delete(record_name)
+    if matching = record_name.match(/(?<namespace>\w+)\/(?<record>.+)/)
+      tmp = getList(matching[:namespace])
+      tmp.remove(record_name)
+    end
+    _write('R', 'D', record_name)
   end
 
   def _open_socket
@@ -144,6 +195,7 @@ class Deepstream::Client
     when 'T' then true
     when 'F' then false
     when 'L' then nil
+    else JSON.parse(payload, object_class: OpenStruct)
     end
   end
 
