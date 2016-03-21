@@ -11,17 +11,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 require 'socket'
 require 'json'
 require 'timeout'
 
-
 module Deepstream end
 
-
 class Deepstream::Record
-
   def initialize(client, name, data, version)
     @client, @name, @data, @version = client, name, data, version
   end
@@ -71,7 +67,7 @@ class Deepstream::List < Deepstream::Record
   end
 
   def all
-    @data.map{ |x| @client.get(x) }
+    @data.map { |x| @client.get(x) }
   end
 
   def keys
@@ -202,5 +198,4 @@ class Deepstream::Client
     else JSON.parse(payload, object_class: OpenStruct)
     end
   end
-
 end
