@@ -46,7 +46,7 @@ class Deepstream::Record
   end
 
   def method_missing(name, *args)
-    unless @data.class == Array
+    unless @data.is_a?(Array)
       set(name, *args) if name[-1] == '='
       @data.send(name, *args)
     end
