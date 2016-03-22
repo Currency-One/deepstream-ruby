@@ -4,13 +4,13 @@ $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 
 Gem::Specification.new do |spec|
   spec.name          = "deepstream"
-  spec.version       = "0.0.7"
+  spec.version       = "0.1.1"
   spec.authors       = ["Currency-One S.A."]
   spec.email         = ["piotr.szczudlak@currency-one.com"]
 
   spec.summary       = %q{deepstream.io ruby client}
   spec.description   = %q{Basic ruby client for the deepstream.io server}
-  spec.homepage      = "https://github.com/thisredone/deepstream-ruby"
+  spec.homepage      = "https://github.com/Currency-One/deepstream-ruby"
 
   spec.files         = `git ls-files -z`.split("\x0").reject { |f| f.match(%r{^(test|spec|features)/}) }
   spec.bindir        = "exe"
