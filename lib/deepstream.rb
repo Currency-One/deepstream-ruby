@@ -67,7 +67,7 @@ class Deepstream::List < Deepstream::Record
   end
 
   def all
-    @data.map { |x| @client.get(x) }
+    @data.map { |x| [x, @client.get(x)] }
   end
 
   def keys
