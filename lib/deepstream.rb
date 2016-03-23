@@ -22,6 +22,10 @@ class Deepstream::Record
     @client, @name, @data, @version = client, name, data, version
   end
 
+  def get_name
+    @name
+  end
+
   def set(*args)
     if args.size == 1
       @client._write('R', 'U', @name, (@version += 1), JSON.dump(args[0]))
@@ -67,7 +71,7 @@ class Deepstream::List < Deepstream::Record
   end
 
   def all
-    @data.map { |x| [x, @client.get(x)] }
+    @data.map { |x| @client.get(x) }
   end
 
   def keys
