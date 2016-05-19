@@ -17,6 +17,10 @@ ds = Deepstream::Client.new('localhost')
 ds.emit 'my_event'
 # or
 ds.emit 'my_event', foo: 'bar', bar: 'foo'
+# or
+ds.emit 'my_event', { foo: 'bar', bar: 'foo' }, timeout: 3
+# or
+ds.emit 'my_event', nil, timeout: 3
 
 
 # Subscribe to events
