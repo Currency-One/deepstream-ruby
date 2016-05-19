@@ -88,8 +88,12 @@ class Deepstream::Client
     @address, @port, @unread_msg, @event_callbacks, @records = address, port, nil, {}, {}
   end
 
-  def emit(event, value = nil)
-    _write('E', 'EVT', event, _typed(value))
+  def emit(event, value = nil, opts = { timeout: nil })
+    result = nil
+    Timeout::timeout(opts[:timeout]) do
+      sleep 1 until (result = _write('E', 'EVT', event, _typed(value))) || opts[:timeout] == nil
+    end
+    result
   end
 
   def on(event, &block)
