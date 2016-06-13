@@ -56,6 +56,10 @@ class Deepstream::Record
       @data[name] || @data[name[-1]]
     end
   end
+
+  def inspect
+    "Deepstream::Record (#{@version}) #{@name} #{@data.to_h}"
+  end
 end
 
 class Deepstream::List < Deepstream::Record
@@ -84,7 +88,7 @@ class Deepstream::List < Deepstream::Record
   end
 
   def all
-    @data.map { |x| @client.get(x) }
+    @data.map { |x| @client.get_record(x) }
   end
 
   def keys
@@ -93,6 +97,10 @@ class Deepstream::List < Deepstream::Record
 
   def set(*args)
     fail 'cannot use set on a list'
+  end
+
+  def inspect
+    "Deepstream::List (#{@version}) #{@name} keys: #{@data}"
   end
 end
 
@@ -135,7 +143,7 @@ class Deepstream::Client
             @timeout = 1
             begin
               _process_msg(_read_socket(timeout: 10))
-            rescue TimeoutError
+            rescue Timeout::TimeoutError
               _write("heartbeat") # send anything to check if deepstream responds
               _process_msg(_read_socket(timeout: 10))
             end
@@ -291,5 +299,9 @@ class Deepstream::Client
     when 'L' then nil
     else JSON.parse(payload, object_class: OpenStruct)
     end
+  end
+
+  def inspect
+    "Deepstream::Client #{@address}:#{@port} connected: #{@connected}"
   end
 end
