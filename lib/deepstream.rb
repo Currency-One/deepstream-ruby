@@ -143,7 +143,7 @@ class Deepstream::Client
             @timeout = 1
             begin
               _process_msg(_read_socket(timeout: 10))
-            rescue Timeout::TimeoutError
+            rescue Timeout::Error
               _write("heartbeat") # send anything to check if deepstream responds
               _process_msg(_read_socket(timeout: 10))
             end
