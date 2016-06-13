@@ -28,11 +28,16 @@ class Deepstream::Record
 
   def set(*args)
     if args.size == 1
-      @client._write('R', 'U', @name, (@version += 1), JSON.dump(args[0]))
-      @data = OpenStruct.new(args[0])
+      if @client._write('R', 'U', @name, (@version += 1), JSON.dump(args[0]))
+        @data = OpenStruct.new(args[0])
+      end
     else
       @client._write('R', 'P', @name, (@version += 1), args[0][0..-2], @client._typed(args[1]))
+      @data[args[0][0..-2]] = args[1]
     end
+  rescue => e
+    print "unable to set\n"
+    print "Error: ", e.message, "\n" if @client.verbose
   end
 
   def _patch(version, field, value)
@@ -48,25 +53,33 @@ class Deepstream::Record
   def method_missing(name, *args)
     unless @data.is_a?(Array)
       set(name, *args) if name[-1] == '='
-      @data.send(name, *args)
+      @data[name] || @data[name[-1]]
     end
   end
 end
 
 class Deepstream::List < Deepstream::Record
   def add(record_name)
-    if @data.is_a?(Array)
-      @data.push record_name unless @data.include? record_name
-    else
-      @data = [record_name]
+    @data = [] unless @data.is_a?(Array)
+    unless @data.include? record_name
+      @data.push record_name
+      @client._write('R', 'U', @name, (@version += 1), JSON.dump(@data))
     end
-    @client._write('R', 'U', @name, (@version += 1), JSON.dump(@data))
+    @data
+  rescue => e
+    print "unable to add ", @data.pop, "\n"
+    print "Error: ", e.message, "\n" if @client.verbose
     @data
   end
 
   def remove(record_name)
     @data.delete_if { |x| x == record_name }
     @client._write('R', 'U', @name, (@version += 1), JSON.dump(@data))
+    @data
+  rescue => e
+    print "unable to remove ", record_name, "\n"
+    @data.push record_name
+    print "Error: ", e.message, "\n" if @client.verbose
     @data
   end
 
@@ -84,20 +97,83 @@ class Deepstream::List < Deepstream::Record
 end
 
 class Deepstream::Client
-  def initialize(address, port = 6021)
-    @address, @port, @unread_msg, @event_callbacks, @records = address, port, nil, {}, {}
+  def initialize(address, port = 6021, credentials = {})
+    @address, @port, @unread_msg, @event_callbacks, @records, @max_timeout, @timeout = address, port, nil, {}, {}, 60, 1
+    connect(credentials)
+  end
+
+  attr_accessor :verbose, :max_timeout
+  attr_reader :connected
+
+  def _login(credentials)
+    _write("A", "REQ", credentials.to_json)
+    raise unless _read_socket == %w{A A}
+  end
+
+  def _read_socket(timeout: nil)
+    Timeout.timeout(timeout) do
+      @socket.gets(30.chr).tap { |m| break m.chomp(30.chr).split(31.chr) if m }
+    end
+  end
+
+  def connect(credentials)
+    return self if @connected
+    Thread.start do
+      Thread.current[:name] = "reader#{object_id}"
+      loop do
+        break if @connected # ensures only one thread remains after reconnection
+        begin
+          Timeout.timeout(2) { @socket = TCPSocket.new(@address, @port) }
+          _login(credentials)
+          @connected = true
+          print Time.now.to_s[/.+ .+ /], "Connected\n" if @verbose
+          Thread.start do
+            _sync_records
+            _resubscribe_events
+          end
+          loop do
+            @timeout = 1
+            begin
+              _process_msg(_read_socket(timeout: 10))
+            rescue TimeoutError
+              _write("heartbeat") # send anything to check if deepstream responds
+              _process_msg(_read_socket(timeout: 10))
+            end
+          end
+        rescue => e
+          @connected = false
+          @socket.close rescue nil
+          print Time.now.to_s[/.+ .+ /], "Can't connect to deepstream server\n" if @verbose
+          print "Error: ", e.message, "\n" if @verbose
+          sleep @timeout
+          @timeout = [@timeout * 1.2, @max_timeout].min
+        end
+      end
+    end
+    sleep 0.5
+    self
+  end
+
+  def disconnect
+    @connected = false
+    @socket.close rescue nil
+    Thread.list.find { |x| x[:name] == "reader#{object_id}" }.kill
+    self
   end
 
   def emit(event, value = nil, opts = { timeout: nil })
     result = nil
     Timeout::timeout(opts[:timeout]) do
-      sleep 1 until (result = _write('E', 'EVT', event, _typed(value))) || opts[:timeout] == nil
+      sleep 1 until (result = _write('E', 'EVT', event, _typed(value)) rescue false) || opts[:timeout].nil?
     end
     result
   end
 
   def on(event, &block)
     _write_and_read('E', 'S', event)
+    @event_callbacks[event] = block
+  rescue => e
+    print "Error: ", e.message, "\n" if @verbose
     @event_callbacks[event] = block
   end
 
@@ -107,16 +183,19 @@ class Deepstream::Client
 
   def get_record(record_name, list: nil)
     name = list ? "#{list}/#{record_name}" : record_name
+    if list
+      @records[list] ||= get_list(list)
+      @records[list].add(name)
+    end
     @records[name] ||= (
       _write_and_read('R', 'CR', name)
       msg = _read
       Deepstream::Record.new(self, name, _parse_data(msg[4]), msg[3].to_i)
     )
-    if list
-      @records[list] ||= get_list(list)
-      @records[list].add(name)
-    end
     @records[name]
+  rescue => e
+    print "Error: ", e.message, "\n" if @verbose
+    @records[name] = Deepstream::Record.new(self, name, OpenStruct.new, 0)
   end
 
   def get_list(list_name)
@@ -125,6 +204,9 @@ class Deepstream::Client
       msg = _read
       Deepstream::List.new(self, list_name, _parse_data(msg[4]), msg[3].to_i)
     )
+  rescue => e
+    print "Error: ", e.message, "\n" if @verbose
+    @records[list_name] = Deepstream::List.new(self, list_name, [], 0)
   end
 
   def delete(record_name)
@@ -133,22 +215,23 @@ class Deepstream::Client
       tmp.remove(record_name)
     end
     _write('R', 'D', record_name)
+  rescue => e
+    print "Error: ", e.message, "\n" if @verbose
+    false
   end
 
-  def _open_socket
-    Timeout.timeout(2) { @socket = TCPSocket.new(@address, @port) }
-    Thread.start do
-      loop { _process_msg(@socket.gets(30.chr).tap { |m| break m.chomp(30.chr).split(31.chr) if m }) }
+  def _resubscribe_events
+    @event_callbacks.keys.each do |event|
+      _write_and_read('E', 'S', event)
     end
-  rescue
-    print Time.now.to_s[/.+ .+ /], "Can't connect to deepstream server\n"
-    raise
   end
 
-  def _connect
-    _open_socket
-    @connected = true
-    @connected = _write_and_read(%w{A REQ {}}) { |msg| msg == %w{A A} }
+  def _sync_records
+    @records.each do |name, record|
+      _write_and_read('R', 'CR', name)
+      msg = _read
+      @records[name]._update(msg[3].to_i, _parse_data(msg[4]))
+    end
   end
 
   def _write_and_read(*args)
@@ -158,10 +241,10 @@ class Deepstream::Client
   end
 
   def _write(*args)
-    _connect unless @connected
     @socket.write(args.join(31.chr) + 30.chr)
-  rescue
-    @connected = false
+  rescue => e
+    raise "not connected" unless @connected
+    raise e
   end
 
   def _process_msg(msg)
@@ -171,7 +254,10 @@ class Deepstream::Client
     when %w{R U} then @records[msg[2]]._update(msg[3], _parse_data(msg[4]))
     when %w{R A} then @records.delete(msg[3]) if msg[2] == 'D'
     when %w{E A} then nil
-    else @unread_msg = msg
+    when %w{X E} then nil
+    when [] then nil
+    else
+      @unread_msg = msg
     end
   end
 
