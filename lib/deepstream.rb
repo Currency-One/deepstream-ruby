@@ -115,7 +115,8 @@ class Deepstream::Client
 
   def _login(credentials)
     _write("A", "REQ", credentials.to_json)
-    raise unless _read_socket == %w{A A}
+    ack = _read_socket
+    raise unless ack == %w{A A} || (ack == %w{C A} && _read_socket == %w{A A})
   end
 
   def _read_socket(timeout: nil)
