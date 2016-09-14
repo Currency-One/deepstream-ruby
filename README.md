@@ -18,7 +18,7 @@ ds.emit 'my_event'
 # or
 ds.emit 'my_event', foo: 'bar', bar: 'foo'
 # or
-ds.emit 'my_event', { foo: 'bar', bar: 'foo' }, timeout: 3
+ds.emit 'my_event', {foo: 'bar', bar: 'foo'}, timeout: 3
 # or
 ds.emit 'my_event', nil, timeout: 3
 
@@ -41,7 +41,7 @@ foo.bar = 'bar'
 foo.set('bar', 'bar')
 
 # Set the whole record
-foo.set(foo: 'foo', bar: 1, )
+foo.set(foo: 'foo', bar: 1)
 
 # Get a list
 foo = ds.get_list('bar')
@@ -53,7 +53,7 @@ foo.add('foo')
 foo.remove('foo')
 
 # Show record names on the list
-foo.keys()
+foo.keys
 
 # Access records on the list
-foo.all()
+foo.all
