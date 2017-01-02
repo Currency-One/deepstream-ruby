@@ -2,11 +2,13 @@ require 'forwardable'
 require 'celluloid/websocket/client'
 require 'deepstream/constants'
 require 'deepstream/event_handler'
+require 'deepstream/record_handler'
 require 'deepstream/message'
 
 module Deepstream
+
   class Client
-    attr_accessor :connection, :last_hearbeat
+    attr_reader :state, :last_hearbeat
 
     include Celluloid
     include Celluloid::Internals::Logger
@@ -15,13 +17,16 @@ module Deepstream
     execute_block_on_receiver :on
 
     def_delegators :@event_handler, :on, :emit, :unsubscribe
+    def_delegators :@record_handler, :get, :set, :delete, :discard
 
-    def initialize(url, credentials = {})
+    def initialize(url, credentials = {}, verbose = false)
       @connection = Celluloid::WebSocket::Client.new(url, Actor.current)
+      @record_handler = RecordHandler.new(self)
       @event_handler = EventHandler.new(self)
       @credentials = credentials
       @last_hearbeat = nil
       @state = CONNECTION_STATE::CLOSED
+      Celluloid.logger.level = verbose ? LOG_LEVEL::INFO : LOG_LEVEL::OFF
     end
 
     def on_open
@@ -35,15 +40,15 @@ module Deepstream
       when TOPIC::CONNECTION then connection_message(message)
       when TOPIC::AUTH       then authentication_message(message)
       when TOPIC::EVENT      then @event_handler.on_message(message)
+      when TOPIC::RECORD     then @record_handler.on_message(message)
       else error(message)
       end
     end
 
     def on_close(code, reason)
-      info("websocket connection closed: #{code.inspect}, #{reason.inspect}")
+      info("Websocket connection closed: #{code.inspect}, #{reason.inspect}")
       @state = CONNECTION_STATE::CLOSED
     end
-
 
     def connection_message(message)
       case message.action
@@ -70,7 +75,7 @@ module Deepstream
 
     def login
       @state = CONNECTION_STATE::AUTHENTICATING
-      send(TOPIC::AUTH, ACTION::REQUEST, @credentials)
+      send(TOPIC::AUTH, ACTION::REQUEST, @credentials.to_json)
     end
 
     def pong
@@ -86,6 +91,7 @@ module Deepstream
 
     def send(*args)
       message = Message.new(*args)
+      info("Sending message: #{message.inspect}")
       sleep 1 while !connected? && message.needs_authentication?
       @connection.text(message.to_s)
     end

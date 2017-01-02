@@ -14,8 +14,7 @@ module Deepstream
     end
 
     def to_s
-      data = @action == ACTION::REQUEST ? @data.to_json : @data
-      [@topic, @action, data].join(MESSAGE_PART_SEPARATOR).prepend(MESSAGE_SEPARATOR)
+      [@topic, @action, @data].join(MESSAGE_PART_SEPARATOR).prepend(MESSAGE_SEPARATOR)
     end
 
     def inspect
