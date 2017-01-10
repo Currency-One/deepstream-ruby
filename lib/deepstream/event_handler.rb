@@ -16,7 +16,7 @@ module Deepstream
       case message.action
       when ACTION::ACK then nil
       when ACTION::EVENT then fire_event_callback(message)
-      else @client.error(message)
+      else @client.on_error(message)
       end
     end
 

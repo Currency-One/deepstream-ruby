@@ -14,7 +14,7 @@ module Deepstream
       when ACTION::READ then read(message)
       when ACTION::PATCH then patch(message)
       when ACTION::UPDATE then read(message)
-      else @client.error(message)
+      else @client.on_error(message)
       end
     end
 

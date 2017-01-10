@@ -3,12 +3,12 @@ require 'celluloid/websocket/client'
 require 'deepstream/constants'
 require 'deepstream/event_handler'
 require 'deepstream/record_handler'
+require 'deepstream/helpers'
 require 'deepstream/message'
 
 module Deepstream
-
   class Client
-    attr_reader :state, :last_hearbeat
+    attr_reader :state, :last_hearbeat, :error
 
     include Celluloid
     include Celluloid::Internals::Logger
@@ -25,6 +25,7 @@ module Deepstream
       @event_handler = EventHandler.new(self)
       @credentials = credentials
       @last_hearbeat = nil
+      @error = nil
       @state = CONNECTION_STATE::CLOSED
       Celluloid.logger.level = verbose ? LOG_LEVEL::INFO : LOG_LEVEL::OFF
     end
@@ -41,7 +42,7 @@ module Deepstream
       when TOPIC::AUTH       then authentication_message(message)
       when TOPIC::EVENT      then @event_handler.on_message(message)
       when TOPIC::RECORD     then @record_handler.on_message(message)
-      else error(message)
+      else on_error(message)
       end
     end
 
@@ -52,19 +53,20 @@ module Deepstream
 
     def connection_message(message)
       case message.action
-      when ACTION::ACK       then login
+      when ACTION::ACK       then @state = CONNECTION_STATE::AUTHENTICATING
       when ACTION::CHALLENGE then challenge
-      when ACTION::ERROR     then error(message)
+      when ACTION::ERROR     then on_error(message)
       when ACTION::PING      then pong
       when ACTION::REJECTION then @state = CONNECTION_STATE::CLOSED
-      else error(message)
+      else on_error(message)
       end
     end
 
     def authentication_message(message)
       case message.action
       when ACTION::ACK then @state = CONNECTION_STATE::OPEN
-      else error(message)
+      when ACTION::ERROR then on_error(message)
+      else on_error(message)
       end
     end
 
@@ -73,9 +75,8 @@ module Deepstream
       send(TOPIC::CONNECTION, ACTION::CHALLENGE_RESPONSE, @connection.url)
     end
 
-    def login
-      @state = CONNECTION_STATE::AUTHENTICATING
-      send(TOPIC::AUTH, ACTION::REQUEST, @credentials.to_json)
+    def login(credentials = @credentials)
+      send(TOPIC::AUTH, ACTION::REQUEST, credentials.to_json)
     end
 
     def pong
@@ -83,10 +84,13 @@ module Deepstream
       send(TOPIC::CONNECTION, ACTION::PONG)
     end
 
-    def error(*args)
-      require 'pry'
-      puts args
-      binding.pry
+    def on_error(message)
+      @error = Helpers::to_type(message.data.last)
+    end
+
+    def close
+      @connection.close
+      @state = CONNECTION_STATE::CLOSED
     end
 
     def send(*args)
@@ -99,5 +103,6 @@ module Deepstream
     def connected?
       @state == CONNECTION_STATE::OPEN
     end
+
   end
 end

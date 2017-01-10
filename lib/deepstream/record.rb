@@ -1,5 +1,6 @@
 require 'json'
 require 'deepstream/constants'
+require 'deepstream/helpers'
 
 module Deepstream
   class Record
@@ -22,7 +23,7 @@ module Deepstream
 
     def patch(version, key, value)
       @version = version.to_i
-      @data[key] = to_type(value)
+      @data[key] = Helpers::to_type(value)
     end
 
     def unsubscribe
@@ -40,31 +41,7 @@ module Deepstream
       elsif args.size == 2
         key, value = args
         @data[key] = value
-        @client.send(TOPIC::RECORD, ACTION::PATCH, @name, (@version += 1), key, to_deepstream_type(value))
-      end
-    end
-
-    def to_deepstream_type(value)
-      case value
-      when Hash then "O#{value.to_json}"
-      when String then "S#{value}"
-      when Numeric then "N#{value}"
-      when TrueClass then 'T'
-      when FalseClass then 'F'
-      when NilClass then 'L'
-      end
-    end
-
-    def to_type(payload)
-      case payload[0]
-      when 'O' then JSON.parse(payload[1..-1])
-      when '{' then JSON.parse(payload)
-      when 'S' then payload[1..-1]
-      when 'N' then payload[1..-1].to_f
-      when 'T' then true
-      when 'F' then false
-      when 'L' then nil
-      else JSON.parse(payload)
+        @client.send(TOPIC::RECORD, ACTION::PATCH, @name, (@version += 1), key, Helpers::to_deepstream_type(value))
       end
     end
   end
