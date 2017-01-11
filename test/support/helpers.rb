@@ -5,6 +5,7 @@ require_relative '../../lib/deepstream'
 module CONFIG
   IP = '127.0.0.1'
   PORT = 7777
+  SECOND_PORT = 8888
   ADDRESS = "ws://#{IP}:#{PORT}"
   MESSAGE_TIMEOUT = 5
   CLIENT_SLEEP = 0.2

@@ -60,6 +60,7 @@ module Deepstream
       when ACTION::CHALLENGE then challenge
       when ACTION::ERROR     then on_error(message)
       when ACTION::PING      then pong
+      when ACTION::REDIRECT  then redirect(message)
       when ACTION::REJECTION then @state = CONNECTION_STATE::CLOSED
       else on_error(message)
       end
@@ -97,6 +98,12 @@ module Deepstream
         @state = CONNECTION_STATE::CLOSED
         @error = 'Two connections heartbeats missed successively'
       end
+    end
+
+    def redirect(message)
+      @connection.close
+      @connection.terminate
+      @connection = Celluloid::WebSocket::Client.new(message.data.last, Actor.current)
     end
 
     def on_error(message)

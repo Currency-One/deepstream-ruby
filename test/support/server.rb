@@ -2,13 +2,15 @@ require 'reel'
 require_relative 'helpers'
 
 class StubServer < Reel::Server::HTTP
-  attr_accessor :clients, :client
+  attr_accessor :clients, :client, :url, :second_url
 
   extend Forwardable
 
   def_delegators :@client, :send, :messages, :last_message, :all_messages
 
   def initialize(host = CONFIG::IP, port = CONFIG::PORT)
+    @url = "ws://#{host}:#{port}"
+    @second_url = "ws://#{host}:#{CONFIG::SECOND_PORT}"
     @clients = []
     super(host, port, &method(:on_connection))
   end
@@ -26,7 +28,7 @@ class StubServer < Reel::Server::HTTP
   end
 
   def remove_connections
-    @clients.map { |c| c.async.terminate }.clear
+    @clients.each { |c| c.async.terminate rescue nil }.clear
     @client = nil
   end
 end
