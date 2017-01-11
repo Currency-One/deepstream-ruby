@@ -19,15 +19,18 @@ module Deepstream
     def_delegators :@event_handler, :on, :emit, :unsubscribe
     def_delegators :@record_handler, :get, :set, :delete, :discard
 
-    def initialize(url, credentials = {}, verbose = false)
+    def initialize(url, options = {})
       @connection = Celluloid::WebSocket::Client.new(url, Actor.current)
       @record_handler = RecordHandler.new(self)
       @event_handler = EventHandler.new(self)
-      @credentials = credentials
+      options = Helpers::default_options.merge!(options)
+      @credentials = options[:credentials]
+      @heartbeat_interval = options[:heartbeat_interval]
+      @verbose = options[:verbose]
       @last_hearbeat = nil
       @error = nil
       @state = CONNECTION_STATE::CLOSED
-      Celluloid.logger.level = verbose ? LOG_LEVEL::INFO : LOG_LEVEL::OFF
+      Celluloid.logger.level = @verbose ? LOG_LEVEL::INFO : LOG_LEVEL::OFF
     end
 
     def on_open
@@ -64,7 +67,7 @@ module Deepstream
 
     def authentication_message(message)
       case message.action
-      when ACTION::ACK then @state = CONNECTION_STATE::OPEN
+      when ACTION::ACK then on_login
       when ACTION::ERROR then on_error(message)
       else on_error(message)
       end
@@ -80,8 +83,20 @@ module Deepstream
     end
 
     def pong
-      @last_hearbeat = Time.now
+      @last_heartbeat = Time.now
       send(TOPIC::CONNECTION, ACTION::PONG)
+    end
+
+    def on_login
+      @state = CONNECTION_STATE::OPEN
+      every(@heartbeat_interval) { check_heartbeat } if @heartbeat_interval
+    end
+
+    def check_heartbeat
+      if @last_heartbeat && Time.now - @last_heartbeat > 2 * @heartbeat_interval
+        @state = CONNECTION_STATE::CLOSED
+        @error = 'Two connections heartbeats missed successively'
+      end
     end
 
     def on_error(message)
@@ -103,6 +118,5 @@ module Deepstream
     def connected?
       @state == CONNECTION_STATE::OPEN
     end
-
   end
 end

@@ -6,7 +6,7 @@ class StubServer < Reel::Server::HTTP
 
   extend Forwardable
 
-  def_delegators :@client, :send, :messages, :last_message
+  def_delegators :@client, :send, :messages, :last_message, :all_messages
 
   def initialize(host = CONFIG::IP, port = CONFIG::PORT)
     @clients = []
@@ -33,6 +33,7 @@ end
 
 class DeepstreamHandler
   attr_accessor :socket, :messages, :last_message
+
   include Celluloid
 
   def initialize(websocket)
@@ -40,10 +41,15 @@ class DeepstreamHandler
     @messages = []
   end
 
-  def last_message
-    message = Future.new { @socket.read }.value(CONFIG::MESSAGE_TIMEOUT)
-    @messages << incoming_message(message)
-    incoming_message(message)
+  def last_message(timeout = CONFIG::MESSAGE_TIMEOUT)
+    message = Future.new { @socket.read }.value(timeout)
+    (@messages << incoming_message(message)).last
+  end
+
+  def all_messages
+    loop { last_message(3) }
+  rescue Celluloid::TimedOut
+    @messages
   end
 
   def send(text)

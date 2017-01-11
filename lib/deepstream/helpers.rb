@@ -25,5 +25,13 @@ module Deepstream
       else JSON.parse(payload)
       end
     end
+
+    def self.default_options
+      {
+        credentials: {},
+        heartbeat_interval: nil,
+        verbose: false
+      }
+    end
   end
 end
