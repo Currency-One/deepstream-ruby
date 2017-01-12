@@ -3,11 +3,11 @@ Given /^the second test server is ready$/ do
 end
 
 Given /^the second server has (\d+) active connections$/ do |number|
-  expect($second_server.clients.size).to eq(number.to_i)
+  expect($second_server.clients.select(&:active).count).to eq(number.to_i)
 end
 
 Then /^the server has received (\d+) messages$/ do |number|
-  expect($second_server.all_messages.size).to eq(number.to_i)
+  expect($server.all_messages.size).to eq(number.to_i)
 end
 
 When /^some time passes$/ do
@@ -15,7 +15,7 @@ When /^some time passes$/ do
 end
 
 Then /^the client is on the second server$/ do
-  $server.shutdown
+  $first_server = $server
   $server = $second_server
 end
 
@@ -26,4 +26,9 @@ end
 When /the server sends the message (C\|RED\|(<SECOND_SERVER_URL>)\+)$/ do |message, url|
   $server.send(outgoing_message(message.sub(url, $server.second_url)))
   $server.remove_connections # because we reject the connection and redirect the client to another server
+end
+
+When /^the server sends the message C\|REJ\+$/ do
+  $server.send(outgoing_message("C|REJ+"))
+  $server.reject_connection
 end

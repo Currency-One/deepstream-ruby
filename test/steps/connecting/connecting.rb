@@ -3,7 +3,7 @@ Given(/^the test server is ready$/) do
 end
 
 Then(/^the server has (\d+) active connections$/) do |number|
-  expect($server.clients.count).to eq(number.to_i)
+  expect($server.clients.select(&:active).count).to eq(number.to_i)
 end
 
 Given(/^the client is initialised$/) do

@@ -29,6 +29,7 @@ module Deepstream
       @verbose = options[:verbose]
       @last_hearbeat = nil
       @error = nil
+      @challenge_denied = false
       @state = CONNECTION_STATE::CLOSED
       Celluloid.logger.level = @verbose ? LOG_LEVEL::INFO : LOG_LEVEL::OFF
     end
@@ -61,7 +62,7 @@ module Deepstream
       when ACTION::ERROR     then on_error(message)
       when ACTION::PING      then pong
       when ACTION::REDIRECT  then redirect(message)
-      when ACTION::REJECTION then @state = CONNECTION_STATE::CLOSED
+      when ACTION::REJECTION then on_rejection
       else on_error(message)
       end
     end
@@ -80,7 +81,11 @@ module Deepstream
     end
 
     def login(credentials = @credentials)
-      send(TOPIC::AUTH, ACTION::REQUEST, credentials.to_json)
+      if @challenge_denied
+        @error = "this client's connection was closed"
+      else
+        send(TOPIC::AUTH, ACTION::REQUEST, credentials.to_json)
+      end
     end
 
     def pong
@@ -93,6 +98,11 @@ module Deepstream
       every(@heartbeat_interval) { check_heartbeat } if @heartbeat_interval
     end
 
+    def on_rejection
+      @challenge_denied = true
+      close
+    end
+
     def check_heartbeat
       if @last_heartbeat && Time.now - @last_heartbeat > 2 * @heartbeat_interval
         @state = CONNECTION_STATE::CLOSED
@@ -101,8 +111,7 @@ module Deepstream
     end
 
     def redirect(message)
-      @connection.close
-      @connection.terminate
+      close
       @connection = Celluloid::WebSocket::Client.new(message.data.last, Actor.current)
     end
 
@@ -112,6 +121,7 @@ module Deepstream
 
     def close
       @connection.close
+      @connection.terminate
       @state = CONNECTION_STATE::CLOSED
     end
 

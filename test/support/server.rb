@@ -6,7 +6,7 @@ class StubServer < Reel::Server::HTTP
 
   extend Forwardable
 
-  def_delegators :@client, :send, :messages, :last_message, :all_messages
+  def_delegators :@client, :send, :messages, :last_message, :all_messages, :reject_connection
 
   def initialize(host = CONFIG::IP, port = CONFIG::PORT)
     @url = "ws://#{host}:#{port}"
@@ -31,16 +31,22 @@ class StubServer < Reel::Server::HTTP
     @clients.each { |c| c.async.terminate rescue nil }.clear
     @client = nil
   end
+
+  def close
+    remove_connections
+    shutdown
+  end
 end
 
 class DeepstreamHandler
-  attr_accessor :socket, :messages, :last_message
+  attr_accessor :socket, :messages, :last_message, :active
 
   include Celluloid
 
   def initialize(websocket)
     @socket = websocket
     @messages = []
+    @active = true
   end
 
   def last_message(timeout = CONFIG::MESSAGE_TIMEOUT)
@@ -49,12 +55,16 @@ class DeepstreamHandler
   end
 
   def all_messages
-    loop { last_message(3) }
+    @active ? loop { last_message(3) } : @messages
   rescue Celluloid::TimedOut
     @messages
   end
 
   def send(text)
     @socket.write(text)
+  end
+
+  def reject_connection
+    @active = false
   end
 end

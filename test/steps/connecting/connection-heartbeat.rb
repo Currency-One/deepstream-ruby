@@ -8,7 +8,7 @@ Then /^the server received the message (.*)$/ do |message|
 end
 
 When /^two seconds later$/ do
-  Kernel.sleep 2
+  sleep(2)
 end
 
 Then /^the client throws a "([^"]*)" error with message "([^"]*)"$/ do |exception, error|
