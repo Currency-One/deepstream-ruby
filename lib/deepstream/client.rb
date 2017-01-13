@@ -25,11 +25,13 @@ module Deepstream
       @event_handler = EventHandler.new(self)
       options = Helpers::default_options.merge!(options)
       @credentials = options[:credentials]
+      @autologin = options[:autologin]
       @heartbeat_interval = options[:heartbeat_interval]
       @verbose = options[:verbose]
       @last_hearbeat = nil
       @error = nil
       @challenge_denied = false
+      @login_requested = false
       @state = CONNECTION_STATE::CLOSED
       Celluloid.logger.level = @verbose ? LOG_LEVEL::INFO : LOG_LEVEL::OFF
     end
@@ -40,7 +42,7 @@ module Deepstream
 
     def on_message(data)
       message = Message.new(data)
-      info(message.inspect)
+      info("Incoming message: #{message.inspect}")
       case message.topic
       when TOPIC::CONNECTION then connection_message(message)
       when TOPIC::AUTH       then authentication_message(message)
@@ -57,7 +59,7 @@ module Deepstream
 
     def connection_message(message)
       case message.action
-      when ACTION::ACK       then @state = CONNECTION_STATE::AUTHENTICATING
+      when ACTION::ACK       then on_connection_ack
       when ACTION::CHALLENGE then challenge
       when ACTION::ERROR     then on_error(message)
       when ACTION::PING      then pong
@@ -80,12 +82,22 @@ module Deepstream
       send(TOPIC::CONNECTION, ACTION::CHALLENGE_RESPONSE, @connection.url)
     end
 
+    def on_connection_ack
+      @state = CONNECTION_STATE::AUTHENTICATING
+      login if @autologin || @login_requested
+    end
+
     def login(credentials = @credentials)
+      @credentials = credentials
       if @challenge_denied
         @error = "this client's connection was closed"
+      elsif @state == CONNECTION_STATE::AUTHENTICATING
+        send(TOPIC::AUTH, ACTION::REQUEST, @credentials.to_json)
+        @login_requested = false
       else
-        send(TOPIC::AUTH, ACTION::REQUEST, credentials.to_json)
+        @login_requested = true
       end
+      self
     end
 
     def pong
