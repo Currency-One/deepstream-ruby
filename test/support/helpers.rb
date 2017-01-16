@@ -19,8 +19,6 @@ def outgoing_message(message)
 end
 
 def incoming_message(message)
-  message[1..-1]
-  .gsub(Deepstream::MESSAGE_PART_SEPARATOR, CONFIG::MESSAGE_PART_SEPARATOR)
+  message.gsub(Deepstream::MESSAGE_PART_SEPARATOR, CONFIG::MESSAGE_PART_SEPARATOR)
   .gsub(Deepstream::MESSAGE_SEPARATOR, CONFIG::MESSAGE_SEPARATOR)
-  .concat(CONFIG::MESSAGE_SEPARATOR)
 end

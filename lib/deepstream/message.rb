@@ -16,7 +16,7 @@ module Deepstream
     def to_s
       args = [@topic, @action]
       args << @data unless @data.empty?
-      args.join(MESSAGE_PART_SEPARATOR).prepend(MESSAGE_SEPARATOR)
+      args.join(MESSAGE_PART_SEPARATOR).concat(MESSAGE_SEPARATOR)
     end
 
     def inspect
