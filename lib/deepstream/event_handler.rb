@@ -1,4 +1,5 @@
 require 'deepstream/constants'
+require 'deepstream/helpers'
 
 module Deepstream
   class EventHandler
@@ -20,8 +21,8 @@ module Deepstream
       end
     end
 
-    def emit(*args)
-      @client.send(TOPIC::EVENT, ACTION::EVENT, args)
+    def emit(event, data = nil)
+      @client.send(TOPIC::EVENT, ACTION::EVENT, event, Helpers::to_deepstream_type(data))
     end
 
     def unsubscribe(event)
@@ -30,8 +31,9 @@ module Deepstream
     end
 
     def fire_event_callback(message)
-      event, *args = message.data
-      Celluloid::Future.new { @callbacks[event].(args) }
+      event, data = message.data
+      data = Helpers::to_type(data)
+      Celluloid::Future.new { @callbacks[event].(event, data) }
     end
   end
 end
