@@ -50,8 +50,7 @@ class DeepstreamHandler
   end
 
   def last_message(timeout = CONFIG::MESSAGE_TIMEOUT)
-    message = Future.new { @socket.read }.value(timeout)
-    (@messages << incoming_message(message)).last
+    Future.new { (@messages << incoming_message(@socket.read)).last }.value(timeout)
   end
 
   def all_messages
