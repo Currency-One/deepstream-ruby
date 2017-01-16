@@ -1,5 +1,5 @@
 Given(/^the client is initialised with a small heartbeat interval$/) do
-  @client = Deepstream::Client.new(CONFIG::ADDRESS, { heartbeat_interval: 1 })
+  @client = Deepstream::Client.new(CONFIG::ADDRESS, { autologin: false, heartbeat_interval: 1 })
   @client.sleep(CONFIG::CLIENT_SLEEP)
 end
 

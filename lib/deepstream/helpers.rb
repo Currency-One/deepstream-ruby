@@ -28,7 +28,7 @@ module Deepstream
 
     def self.default_options
       {
-        autologin: false,
+        autologin: true,
         credentials: {},
         heartbeat_interval: nil,
         verbose: false
