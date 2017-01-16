@@ -19,8 +19,9 @@ Gem::Specification.new do |spec|
   spec.require_paths = ["lib"]
   spec.license       = "Apache-2.0"
   spec.add_runtime_dependency 'celluloid-websocket-client', '~> 0'
-  spec.add_development_dependency 'cucumber', '~> 0'
-  spec.add_development_dependency 'reel', '~> 0'
-  spec.add_development_dependency 'pry', '~> 0'
-  spec.add_development_dependency 'rspec', '~> 0'
+  spec.add_development_dependency 'cucumber'
+  spec.add_development_dependency 'reel'
+  spec.add_development_dependency 'pry'
+  spec.add_development_dependency 'rspec-expectations'
+  spec.add_development_dependency 'rake'
 end
