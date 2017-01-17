@@ -14,9 +14,9 @@ module Deepstream
     include Celluloid::Internals::Logger
     extend Forwardable
 
-    execute_block_on_receiver :on
+    execute_block_on_receiver :on, :subscribe
 
-    def_delegators :@event_handler, :on, :emit, :unsubscribe
+    def_delegators :@event_handler, :on, :emit, :subscribe, :unsubscribe
     def_delegators :@record_handler, :get, :set, :delete, :discard
 
     def initialize(url, options = {})

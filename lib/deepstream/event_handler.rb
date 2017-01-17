@@ -3,6 +3,7 @@ require 'deepstream/helpers'
 
 module Deepstream
   class EventHandler
+
     def initialize(client)
       @client = client
       @callbacks = {}
@@ -16,6 +17,7 @@ module Deepstream
       end
       @callbacks[event] = block
     end
+    alias :subscribe :on
 
     def on_message(message)
       case message.action
