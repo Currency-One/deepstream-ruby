@@ -9,8 +9,8 @@ module Deepstream
     end
 
     def on(event, &block)
+      @client.send(TOPIC::EVENT, ACTION::SUBSCRIBE, event) unless @callbacks[event]
       @callbacks[event] = block
-      @client.send(TOPIC::EVENT, ACTION::SUBSCRIBE, event)
     end
 
     def on_message(message)

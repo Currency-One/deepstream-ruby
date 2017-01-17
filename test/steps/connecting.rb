@@ -75,7 +75,7 @@ When /^the client logs in with username "([^"]*)" and password "([^"]*)"$/ do |u
 end
 
 Then /^the last message the server recieved is (.*)$/ do |message|
-  expect($server.last_message).to eq(message)
+  expect($server.all_messages.last).to eq(message)
 end
 
 Then /^the last login was successful$/ do

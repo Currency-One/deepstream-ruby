@@ -34,3 +34,19 @@ end
 When /^the client unsubscribes from an event named "([^"]*)"$/ do |event|
   @client.unsubscribe(event)
 end
+
+Given /^the server resets its message count$/ do
+  $server.all_messages.clear
+end
+
+When /^the client unlistens to events matching "([^"]*)"$/ do |arg1|
+  pending # express the regexp above with the code you wish you had
+end
+
+Then /^the client will be notified of new event match "([^"]*)"$/ do |arg1|
+  pending # express the regexp above with the code you wish you had
+end
+
+Then /^the client will be notified of event match removal "([^"]*)"$/ do |arg1|
+  pending # express the regexp above with the code you wish you had
+end
