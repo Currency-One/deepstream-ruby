@@ -6,19 +6,38 @@ module Deepstream
     def initialize(client)
       @client = client
       @callbacks = {}
+      @ack_timeout_registry = {}
     end
 
     def on(event, &block)
-      @client.send(TOPIC::EVENT, ACTION::SUBSCRIBE, event) unless @callbacks[event]
+      unless @callbacks[event]
+        @client.send(TOPIC::EVENT, ACTION::SUBSCRIBE, event)
+        @ack_timeout_registry[event] = add_ack_timeout(event)
+      end
       @callbacks[event] = block
     end
 
     def on_message(message)
       case message.action
-      when ACTION::ACK then nil
+      when ACTION::ACK then cancel_ack_timeout(message)
       when ACTION::EVENT then fire_event_callback(message)
       else @client.on_error(message)
       end
+    end
+
+    def add_ack_timeout(event)
+      timeout = @client.options[:ack_timeout]
+      if timeout
+        Celluloid::after(timeout) do
+          @client.on_error("No ACK message received in time for #{event}")
+        end
+      end
+    end
+
+    def cancel_ack_timeout(message)
+      event = message.data.last
+      @ack_timeout_registry[event].cancel
+      @ack_timeout_registry[event] = nil
     end
 
     def emit(event, data = nil)

@@ -7,7 +7,7 @@ Then(/^the server has (\d+) active connections$/) do |number|
 end
 
 Given(/^the client is initialised$/) do
-  @client = Deepstream::Client.new(CONFIG::ADDRESS, { autologin: false })
+  @client = Deepstream::Client.new(CONFIG::ADDRESS, { autologin: false, ack_timeout: CONFIG::ACK_TIMEOUT })
   @client.sleep(CONFIG::CLIENT_SLEEP)
 end
 
@@ -29,7 +29,6 @@ When /^two seconds later$/ do
 end
 
 Then /^the client throws a "([^"]*)" error with message "([^"]*)"$/ do |exception, error|
-  expect(@client.state).to eq(Deepstream::CONNECTION_STATE::CLOSED)
   expect(@client.error).to eq(error)
 end
 Given /^the second test server is ready$/ do

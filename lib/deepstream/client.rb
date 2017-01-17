@@ -8,7 +8,7 @@ require 'deepstream/message'
 
 module Deepstream
   class Client
-    attr_reader :state, :last_hearbeat, :error
+    attr_reader :state, :last_hearbeat, :error, :options
 
     include Celluloid
     include Celluloid::Internals::Logger
@@ -124,7 +124,7 @@ module Deepstream
     end
 
     def on_error(message)
-      @error = Helpers::to_type(message.data.last)
+      @error = message.is_a?(Message) ? Helpers::to_type(message.data.last) : message
     end
 
     def close
