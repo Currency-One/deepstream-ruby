@@ -23,17 +23,13 @@ module Deepstream
       @connection = Celluloid::WebSocket::Client.new(url, Actor.current)
       @record_handler = RecordHandler.new(self)
       @event_handler = EventHandler.new(self)
-      options = Helpers::default_options.merge!(options)
-      @credentials = options[:credentials]
-      @autologin = options[:autologin]
-      @heartbeat_interval = options[:heartbeat_interval]
-      @verbose = options[:verbose]
+      @options = Helpers::default_options.merge!(options)
       @last_hearbeat = nil
       @error = nil
       @challenge_denied = false
       @login_requested = false
       @state = CONNECTION_STATE::CLOSED
-      Celluloid.logger.level = @verbose ? LOG_LEVEL::INFO : LOG_LEVEL::OFF
+      Celluloid.logger.level = @options[:verbose] ? LOG_LEVEL::INFO : LOG_LEVEL::OFF
     end
 
     def on_open
@@ -84,15 +80,15 @@ module Deepstream
 
     def on_connection_ack
       @state = CONNECTION_STATE::AUTHENTICATING
-      login if @autologin || @login_requested
+      login if @options[:autologin] || @login_requested
     end
 
-    def login(credentials = @credentials)
-      @credentials = credentials
+    def login(credentials = @options[:credentials])
+      @options[:credentials] = credentials
       if @challenge_denied
         @error = "this client's connection was closed"
       elsif @state == CONNECTION_STATE::AUTHENTICATING
-        send(TOPIC::AUTH, ACTION::REQUEST, @credentials.to_json)
+        send(TOPIC::AUTH, ACTION::REQUEST, @options[:credentials].to_json)
         @login_requested = false
       else
         @login_requested = true
@@ -107,7 +103,7 @@ module Deepstream
 
     def on_login
       @state = CONNECTION_STATE::OPEN
-      every(@heartbeat_interval) { check_heartbeat } if @heartbeat_interval
+      every(@options[:heartbeat_interval]) { check_heartbeat } if @options[:heartbeat_interval]
     end
 
     def on_rejection
@@ -116,7 +112,7 @@ module Deepstream
     end
 
     def check_heartbeat
-      if @last_heartbeat && Time.now - @last_heartbeat > 2 * @heartbeat_interval
+      if @last_heartbeat && Time.now - @last_heartbeat > 2 * @options[:heartbeat_interval]
         @state = CONNECTION_STATE::CLOSED
         @error = 'Two connections heartbeats missed successively'
       end

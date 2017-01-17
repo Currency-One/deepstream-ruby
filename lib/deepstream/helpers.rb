@@ -29,6 +29,7 @@ module Deepstream
     def self.default_options
       {
         autologin: true,
+        ack_timeout: nil,
         credentials: {},
         heartbeat_interval: nil,
         verbose: false
