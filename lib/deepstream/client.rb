@@ -14,26 +14,29 @@ module Deepstream
     include Celluloid::Internals::Logger
     extend Forwardable
 
-    execute_block_on_receiver :on, :subscribe
+    execute_block_on_receiver :on, :subscribe, :listen
 
-    def_delegators :@event_handler, :on, :emit, :subscribe, :unsubscribe
+    def_delegators :@event_handler, :on, :emit, :subscribe, :unsubscribe,
+                   :listen, :resubscribe, :unlisten
     def_delegators :@record_handler, :get, :set, :delete, :discard
 
     def initialize(url, options = {})
-      @connection = Celluloid::WebSocket::Client.new(url, Actor.current)
+      @url = url
+      @connection = connect
       @record_handler = RecordHandler.new(self)
       @event_handler = EventHandler.new(self)
-      @options = Helpers::default_options.merge!(options)
-      @last_hearbeat = nil
-      @error = nil
-      @challenge_denied = false
-      @login_requested = false
+      @options = Helpers.default_options.merge!(options)
+      @message_buffer = []
+      @last_hearbeat, @error = nil
+      @challenge_denied, @login_requested, @deliberate_close = false
+      @failed_reconnect_attempts = 0
       @state = CONNECTION_STATE::CLOSED
       Celluloid.logger.level = @options[:verbose] ? LOG_LEVEL::INFO : LOG_LEVEL::OFF
     end
 
     def on_open
       @state = CONNECTION_STATE::AWAITING_CONNECTION
+      @failed_reconnect_attempts = 0
     end
 
     def on_message(data)
@@ -51,6 +54,7 @@ module Deepstream
     def on_close(code, reason)
       info("Websocket connection closed: #{code.inspect}, #{reason.inspect}")
       @state = CONNECTION_STATE::CLOSED
+      reconnect unless @deliberate_close
     end
 
     def connection_message(message)
@@ -75,7 +79,7 @@ module Deepstream
 
     def challenge
       @state = CONNECTION_STATE::CHALLENGING
-      send(TOPIC::CONNECTION, ACTION::CHALLENGE_RESPONSE, @connection.url)
+      send(TOPIC::CONNECTION, ACTION::CHALLENGE_RESPONSE, @url)
     end
 
     def on_connection_ack
@@ -86,10 +90,10 @@ module Deepstream
     def login(credentials = @options[:credentials])
       @options[:credentials] = credentials
       if @challenge_denied
-        @error = "this client's connection was closed"
+        on_error("this client's connection was closed")
       elsif @state == CONNECTION_STATE::AUTHENTICATING
-        send(TOPIC::AUTH, ACTION::REQUEST, @options[:credentials].to_json)
         @login_requested = false
+        send(TOPIC::AUTH, ACTION::REQUEST, @options[:credentials].to_json)
       else
         @login_requested = true
       end
@@ -103,6 +107,7 @@ module Deepstream
 
     def on_login
       @state = CONNECTION_STATE::OPEN
+      @message_buffer.each { |message| send(message) }.clear
       every(@options[:heartbeat_interval]) { check_heartbeat } if @options[:heartbeat_interval]
     end
 
@@ -112,32 +117,59 @@ module Deepstream
     end
 
     def check_heartbeat
-      if @last_heartbeat && Time.now - @last_heartbeat > 2 * @options[:heartbeat_interval]
-        @state = CONNECTION_STATE::CLOSED
-        @error = 'Two connections heartbeats missed successively'
-      end
+      return unless @last_heartbeat && Time.now - @last_heartbeat > 2 * @options[:heartbeat_interval]
+      @state = CONNECTION_STATE::CLOSED
+      on_error('Two connections heartbeats missed successively')
     end
 
     def redirect(message)
       close
-      @connection = Celluloid::WebSocket::Client.new(message.data.last, Actor.current)
+      connect(message.data.last)
+    end
+
+    def connect(url = @url)
+      @connection = Celluloid::WebSocket::Client.new(url, Actor.current)
+    end
+
+    def reconnect
+      @state = CONNECTION_STATE::RECONNECTING
+      if @failed_reconnect_attempts < @options[:max_reconnect_attempts]
+        connect
+        resubscribe
+      else
+        @state = CONNECTION_STATE::ERROR
+      end
+    rescue Errno::ECONNREFUSED
+      @failed_reconnect_attempts += 1
+      on_error("Can't connect! Deepstream server unreachable on #{@url}")
+      sleep(reconnect_interval)
+      reconnect
+    end
+
+    def reconnect_interval
+      [@options[:reconnect_interval] * @failed_reconnect_attempts, @options[:max_reconnect_interval]].min
     end
 
     def on_error(message)
-      @error = message.is_a?(Message) ? Helpers::to_type(message.data.last) : message
+      @error = message.is_a?(Message) ? Helpers.to_type(message.data.last) : message
     end
 
     def close
+      @deliberate_close = true
       @connection.close
       @connection.terminate
       @state = CONNECTION_STATE::CLOSED
     end
 
     def send(*args)
-      message = Message.new(*args)
-      info("Sending message: #{message.inspect}")
-      sleep 1 while !connected? && message.needs_authentication?
-      @connection.text(message.to_s)
+      message = args.first.is_a?(Message) ? args.first : Message.new(*args)
+      if !connected? && message.needs_authentication?
+        info("Placing message #{message.inspect} in buffer, waiting for connection")
+        @message_buffer << message
+      else
+        info("Sending message: #{message.inspect}")
+        @connection.text(message.to_s)
+      end
     end
 
     def connected?

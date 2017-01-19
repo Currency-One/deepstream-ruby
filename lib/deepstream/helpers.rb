@@ -28,10 +28,13 @@ module Deepstream
 
     def self.default_options
       {
-        autologin: true,
         ack_timeout: nil,
+        autologin: true,
         credentials: {},
         heartbeat_interval: nil,
+        max_reconnect_attempts: 5,
+        max_reconnect_interval: 30,
+        reconnect_interval: 1,
         verbose: false
       }
     end

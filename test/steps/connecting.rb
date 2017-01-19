@@ -29,8 +29,10 @@ When /^two seconds later$/ do
 end
 
 Then /^the client throws a "([^"]*)" error with message "([^"]*)"$/ do |exception, error|
+  sleep(1)
   expect(@client.error).to eq(error)
 end
+
 Given /^the second test server is ready$/ do
   ($second_server ||= StubServer.new(CONFIG::IP, CONFIG::SECOND_PORT)).remove_connections
 end
