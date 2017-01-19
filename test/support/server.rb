@@ -9,8 +9,8 @@ class StubServer < Reel::Server::HTTP
   def_delegators :@client, :send, :messages, :last_message, :all_messages, :reject_connection
 
   def initialize(host = CONFIG::IP, port = CONFIG::PORT)
-    @url = "ws://#{host}:#{port}"
-    @second_url = "ws://#{host}:#{CONFIG::SECOND_PORT}"
+    @url = "ws://#{host}:#{port}/deepstream"
+    @second_url = "ws://#{host}:#{CONFIG::SECOND_PORT}/deepstream"
     @clients = []
     super(host, port, &method(:on_connection))
   end
@@ -27,13 +27,14 @@ class StubServer < Reel::Server::HTTP
     end
   end
 
-  def remove_connections
-    @clients.each { |c| c.async.terminate rescue nil }.clear
+  def remove_connections(close_sockets = false)
+    @clients.each { |c| c.socket.close if close_sockets }
+    .each { |c| c.async.terminate rescue nil }.clear
     @client = nil
   end
 
-  def close
-    remove_connections
+  def close(close_sockets = false)
+    remove_connections(close_sockets)
     shutdown
   end
 end
