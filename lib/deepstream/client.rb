@@ -175,5 +175,9 @@ module Deepstream
     def connected?
       @state == CONNECTION_STATE::OPEN
     end
+
+    def inspect
+      "#{self.class} #{@url} | connection state: #{@state}"
+    end
   end
 end
