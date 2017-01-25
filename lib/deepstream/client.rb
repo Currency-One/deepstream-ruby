@@ -43,9 +43,10 @@ module Deepstream
       message = Message.new(data)
       info("Incoming message: #{message.inspect}")
       case message.topic
-      when TOPIC::CONNECTION then connection_message(message)
       when TOPIC::AUTH       then authentication_message(message)
+      when TOPIC::CONNECTION then connection_message(message)
       when TOPIC::EVENT      then @event_handler.on_message(message)
+      when TOPIC::ERROR      then on_error(message)
       when TOPIC::RECORD     then @record_handler.on_message(message)
       else on_error(message)
       end
@@ -151,7 +152,11 @@ module Deepstream
     end
 
     def on_error(message)
-      @error = message.is_a?(Message) ? Helpers.to_type(message.data.last) : message
+      @error = if message.is_a?(Message)
+        message.topic == TOPIC::ERROR ? message.data : Helpers.to_type(message.data.last)
+      else
+        message
+      end
     end
 
     def close
@@ -162,7 +167,7 @@ module Deepstream
     end
 
     def send(*args)
-      message = args.first.is_a?(Message) ? args.first : Message.new(*args)
+      message = Message.parse(*args)
       if !connected? && message.needs_authentication?
         info("Placing message #{message.inspect} in buffer, waiting for connection")
         @message_buffer << message

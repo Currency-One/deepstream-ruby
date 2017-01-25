@@ -5,6 +5,10 @@ module Deepstream
   class Message
     attr_reader :topic, :action, :data
 
+    def self.parse(*args)
+      args.first.is_a?(self) ? args.first : new(*args)
+    end
+
     def initialize(*args)
       if args.size == 1
         args = args.first.delete(MESSAGE_SEPARATOR).split(MESSAGE_PART_SEPARATOR)
