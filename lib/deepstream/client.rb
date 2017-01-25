@@ -80,7 +80,7 @@ module Deepstream
 
     def challenge
       @state = CONNECTION_STATE::CHALLENGING
-      send(TOPIC::CONNECTION, ACTION::CHALLENGE_RESPONSE, @url)
+      send_message(TOPIC::CONNECTION, ACTION::CHALLENGE_RESPONSE, @url)
     end
 
     def on_connection_ack
@@ -94,7 +94,7 @@ module Deepstream
         on_error("this client's connection was closed")
       elsif @state == CONNECTION_STATE::AUTHENTICATING
         @login_requested = false
-        send(TOPIC::AUTH, ACTION::REQUEST, @options[:credentials].to_json)
+        send_message(TOPIC::AUTH, ACTION::REQUEST, @options[:credentials].to_json)
       else
         @login_requested = true
       end
@@ -103,12 +103,12 @@ module Deepstream
 
     def pong
       @last_heartbeat = Time.now
-      send(TOPIC::CONNECTION, ACTION::PONG)
+      send_message(TOPIC::CONNECTION, ACTION::PONG)
     end
 
     def on_login
       @state = CONNECTION_STATE::OPEN
-      @message_buffer.each { |message| send(message) }.clear
+      @message_buffer.each { |message| send_message(message) }.clear
       every(@options[:heartbeat_interval]) { check_heartbeat } if @options[:heartbeat_interval]
     end
 
@@ -166,7 +166,7 @@ module Deepstream
       @state = CONNECTION_STATE::CLOSED
     end
 
-    def send(*args)
+    def send_message(*args)
       message = Message.parse(*args)
       if !connected? && message.needs_authentication?
         info("Placing message #{message.inspect} in buffer, waiting for connection")

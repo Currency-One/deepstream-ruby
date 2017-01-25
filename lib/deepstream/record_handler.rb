@@ -35,7 +35,7 @@ module Deepstream
     end
 
     def delete(name)
-      @client.send(TOPIC::RECORD, ACTION::DELETE, name) if @records.delete(name)
+      @client.send_message(TOPIC::RECORD, ACTION::DELETE, name) if @records.delete(name)
     end
 
     def read(message)

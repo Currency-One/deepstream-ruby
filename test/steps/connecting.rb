@@ -59,16 +59,16 @@ Then /^the last message the server recieved is (C\|CHR\|(<FIRST_SERVER_URL>)\+)$
 end
 
 When /the server sends the message (C\|RED\|(<SECOND_SERVER_URL>)\+)$/ do |message, url|
-  $server.send(outgoing_message(message.sub(url, $server.second_url)))
+  $server.send_message(outgoing_message(message.sub(url, $server.second_url)))
   $server.remove_connections # because we reject the connection and redirect the client to another server
 end
 
 When /^the server sends the message C\|REJ\+$/ do
-  $server.send(outgoing_message("C|REJ+"))
+  $server.send_message(outgoing_message("C|REJ+"))
   $server.reject_connection
 end
 Given /^the server sends the message (.*)$/ do |message|
-  $server.send(outgoing_message(message))
+  $server.send_message(outgoing_message(message))
 end
 
 When /^the client logs in with username "([^"]*)" and password "([^"]*)"$/ do |username, password|

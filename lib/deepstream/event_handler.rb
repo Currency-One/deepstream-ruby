@@ -13,7 +13,7 @@ module Deepstream
 
     def on(event, &block)
       unless @callbacks[event]
-        @client.send(TOPIC::EVENT, ACTION::SUBSCRIBE, event)
+        @client.send_message(TOPIC::EVENT, ACTION::SUBSCRIBE, event)
         @ack_timeout_registry.add(event, "No ACK message received in time for #{event}")
       end
       @callbacks[event] = block
@@ -23,14 +23,14 @@ module Deepstream
     def listen(pattern, &block)
       pattern = pattern.is_a?(Regexp) ? pattern.source : pattern
       @listeners[pattern] = block
-      @client.send(TOPIC::EVENT, ACTION::LISTEN, pattern)
+      @client.send_message(TOPIC::EVENT, ACTION::LISTEN, pattern)
       @ack_timeout_registry.add(pattern, "No ACK message received in time for #{pattern}")
     end
 
     def unlisten(pattern)
       pattern = pattern.is_a?(Regexp) ? pattern.source : pattern
       @listeners.delete(pattern)
-      @client.send(TOPIC::EVENT, ACTION::UNLISTEN, pattern)
+      @client.send_message(TOPIC::EVENT, ACTION::UNLISTEN, pattern)
     end
 
     def on_message(message)
@@ -44,17 +44,17 @@ module Deepstream
     end
 
     def emit(event, data = nil)
-      @client.send(TOPIC::EVENT, ACTION::EVENT, event, Helpers.to_deepstream_type(data))
+      @client.send_message(TOPIC::EVENT, ACTION::EVENT, event, Helpers.to_deepstream_type(data))
     end
 
     def unsubscribe(event)
       @callbacks.delete(event)
-      @client.send(TOPIC::EVENT, ACTION::UNSUBSCRIBE, event)
+      @client.send_message(TOPIC::EVENT, ACTION::UNSUBSCRIBE, event)
     end
 
     def resubscribe
-      @callbacks.keys.each { |event| @client.send(TOPIC::EVENT, ACTION::SUBSCRIBE, event) }
-      @listeners.keys.each { |pattern| @client.send(TOPIC::EVENT, ACTION::LISTEN, pattern) }
+      @callbacks.keys.each { |event| @client.send_message(TOPIC::EVENT, ACTION::SUBSCRIBE, event) }
+      @listeners.keys.each { |pattern| @client.send_message(TOPIC::EVENT, ACTION::LISTEN, pattern) }
     end
 
     def fire_event_callback(message)

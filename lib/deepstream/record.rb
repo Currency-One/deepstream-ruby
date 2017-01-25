@@ -9,7 +9,7 @@ module Deepstream
     def initialize(client, name)
       @client, @name = client, name
       @data, @version = nil
-      @client.send(TOPIC::RECORD, ACTION::CREATEORREAD, @name)
+      @client.send_message(TOPIC::RECORD, ACTION::CREATEORREAD, @name)
     end
 
     def inspect
@@ -27,7 +27,7 @@ module Deepstream
     end
 
     def unsubscribe
-      @client.send(TOPIC::RECORD, ACTION::UNSUBSCRIBE, name)
+      @client.send_message(TOPIC::RECORD, ACTION::UNSUBSCRIBE, name)
     end
 
     def delete
@@ -37,11 +37,11 @@ module Deepstream
     def set(*args)
       if args.size == 1
         @data = args.first
-        @client.send(TOPIC::RECORD, ACTION::UPDATE, @name, (@version += 1), @data.to_json)
+        @client.send_message(TOPIC::RECORD, ACTION::UPDATE, @name, (@version += 1), @data.to_json)
       elsif args.size == 2
         key, value = args
         @data[key] = value
-        @client.send(TOPIC::RECORD, ACTION::PATCH, @name, (@version += 1), key, Helpers::to_deepstream_type(value))
+        @client.send_message(TOPIC::RECORD, ACTION::PATCH, @name, (@version += 1), key, Helpers::to_deepstream_type(value))
       end
     end
   end

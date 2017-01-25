@@ -6,7 +6,7 @@ class StubServer < Reel::Server::HTTP
 
   extend Forwardable
 
-  def_delegators :@client, :send, :messages, :last_message, :all_messages, :reject_connection
+  def_delegators :@client, :send_message, :messages, :last_message, :all_messages, :reject_connection
 
   def initialize(host = CONFIG::IP, port = CONFIG::PORT)
     @url = "ws://#{host}:#{port}/deepstream"
@@ -60,7 +60,7 @@ class DeepstreamHandler
     @messages
   end
 
-  def send(text)
+  def send_message(text)
     @socket.write(text)
   end
 
