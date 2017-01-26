@@ -23,7 +23,7 @@ module Deepstream
     end
 
     def set(name, *args)
-      @records[name]&.set(args)
+      @records[name]&.set(*args)
     end
 
     def unsubscribe(name)

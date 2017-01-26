@@ -7,13 +7,14 @@ module Deepstream
     attr_reader :name, :data, :version
 
     def initialize(client, name)
-      @client, @name = client, name
+      @client = client
+      @name = name
       @data, @version = nil
       @client.send_message(TOPIC::RECORD, ACTION::CREATEORREAD, @name)
     end
 
     def inspect
-      "#{self.class.name} #{@name} #{@version} #{@data}"
+      "#{self.class} #{@name} #{@version} #{@data}"
     end
 
     def update(version, data)
@@ -21,9 +22,9 @@ module Deepstream
       @data = JSON.parse(data)
     end
 
-    def patch(version, key, value)
+    def patch(version, path, value)
       @version = version.to_i
-      @data[key] = Helpers::to_type(value)
+      set_path(@data, path, Helpers.to_type(value))
     end
 
     def unsubscribe
@@ -39,9 +40,18 @@ module Deepstream
         @data = args.first
         @client.send_message(TOPIC::RECORD, ACTION::UPDATE, @name, (@version += 1), @data.to_json)
       elsif args.size == 2
-        key, value = args
-        @data[key] = value
-        @client.send_message(TOPIC::RECORD, ACTION::PATCH, @name, (@version += 1), key, Helpers::to_deepstream_type(value))
+        path, value = args
+        set_path(@data, path, value)
+        @client.send_message(TOPIC::RECORD, ACTION::PATCH, @name, (@version += 1), path, Helpers.to_deepstream_type(value))
+      end
+    end
+
+    def set_path(data, path, value)
+      key, subkey = path.split('.', 2)
+      if data.is_a?(Hash)
+        subkey ? set_path(data.fetch(key), subkey, value) : data[key] = value
+      elsif data.is_a?(Array)
+        subkey ? set_path(data[key.to_i], subkey, value) : data[key.to_i] = value
       end
     end
   end
