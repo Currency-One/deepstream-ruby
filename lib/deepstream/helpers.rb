@@ -2,6 +2,10 @@ require 'json'
 
 module Deepstream
   module Helpers
+    SCHEME = 'ws://'
+    DEFAULT_PORT = 6020
+    DEFAULT_PATH = 'deepstream'
+
     def self.to_deepstream_type(value)
       case value
       when Hash then "O#{value.to_json}"
@@ -37,6 +41,14 @@ module Deepstream
         reconnect_interval: 1,
         verbose: false
       }
+    end
+
+    def self.get_url(url)
+      url.tap do |url|
+        url.prepend(SCHEME) unless url.start_with?(SCHEME)
+        url.concat(":#{DEFAULT_PORT}") unless url[/\:\d+/]
+        url.concat("/#{DEFAULT_PATH}") unless url[/\/\w+$/]
+      end
     end
   end
 end

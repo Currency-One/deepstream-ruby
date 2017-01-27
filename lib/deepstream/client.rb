@@ -21,7 +21,7 @@ module Deepstream
     def_delegators :@record_handler, :get, :set, :delete, :discard
 
     def initialize(url, options = {})
-      @url = url
+      @url = Helpers.get_url(url)
       @connection = connect
       @record_handler = RecordHandler.new(self)
       @event_handler = EventHandler.new(self)
