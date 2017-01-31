@@ -13,7 +13,7 @@ module Deepstream
       case message.action
       when ACTION::ACK then nil
       when ACTION::PATCH then patch(message)
-      when ACTION::READ then update(message)
+      when ACTION::READ then read(message)
       when ACTION::UPDATE then update(message)
       else @client.on_error(message)
       end
@@ -49,6 +49,11 @@ module Deepstream
     end
 
     private
+
+    def read(message)
+      name, *data = message.data
+      @records[name]&.read(*data)
+    end
 
     def update(message)
       name, *data = message.data

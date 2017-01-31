@@ -11,11 +11,12 @@ module Deepstream
       set(@data.length.to_s, record_name) unless @data.include?(record_name)
     end
 
-    def update(version, data)
+    def read(version, data)
       @version = version.to_i
       data = JSON.parse(data)
       if data.is_a?(Array)
-        set(@data.concat(data).uniq!) unless @data.empty?
+        @data.concat(data).uniq!
+        set(@data) if @data.size > data.size
       end
     end
 

@@ -36,6 +36,10 @@ module Deepstream
       end
     end
 
+    def read(version, data)
+      update(version, data)
+    end
+
     def patch(version, path, value)
       @version = version.to_i
       set_path(@data, path, Helpers.to_type(value))
