@@ -18,7 +18,7 @@ module Deepstream
 
     def_delegators :@event_handler, :on, :emit, :subscribe, :unsubscribe,
                    :listen, :resubscribe, :unlisten
-    def_delegators :@record_handler, :get, :set, :delete, :discard
+    def_delegators :@record_handler, :get, :set, :delete, :discard, :get_list
 
     def initialize(url, options = {})
       @url = Helpers.get_url(url)
