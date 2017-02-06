@@ -39,7 +39,8 @@ module Deepstream
         max_reconnect_attempts: 5,
         max_reconnect_interval: 30,
         reconnect_interval: 1,
-        verbose: false
+        verbose: false,
+        debug: false
       }
     end
 

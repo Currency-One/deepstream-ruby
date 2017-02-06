@@ -11,7 +11,7 @@ module Deepstream
     end
 
     def cancel(name)
-      @timeouts.delete(name).cancel rescue nil
+      @timeouts.delete(name)&.cancel
     end
   end
 end

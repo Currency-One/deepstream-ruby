@@ -26,7 +26,7 @@ module Deepstream
     end
 
     def set(*args)
-      if args.size == 1
+      if args.one?
         @data = args.first
         @client.send_message(TOPIC::RECORD, ACTION::UPDATE, @name, (@version += 1), @data.to_json) if @version
       elsif args.size == 2

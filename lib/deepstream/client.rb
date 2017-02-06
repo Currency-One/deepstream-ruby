@@ -84,6 +84,7 @@ module Deepstream
     end
 
     def close
+      return unless connected?
       @deliberate_close = true
       @connection.close
       @connection.terminate

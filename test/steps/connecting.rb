@@ -7,7 +7,7 @@ Then(/^the server has (\d+) active connections$/) do |number|
 end
 
 Given(/^the client is initialised$/) do
-  @client = Deepstream::Client.new(CONFIG::ADDRESS, { autologin: false, ack_timeout: CONFIG::ACK_TIMEOUT })
+  @client = Deepstream::Client.new(CONFIG::ADDRESS, { autologin: false, ack_timeout: CONFIG::ACK_TIMEOUT, debug: true })
   @client.sleep(CONFIG::CLIENT_SLEEP)
 end
 

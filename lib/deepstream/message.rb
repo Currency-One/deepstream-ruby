@@ -10,7 +10,7 @@ module Deepstream
     end
 
     def initialize(*args)
-      if args.size == 1
+      if args.one?
         args = args.first.delete(MESSAGE_SEPARATOR).split(MESSAGE_PART_SEPARATOR)
       end
       @topic, @action = args.take(2).map(&:to_sym)
