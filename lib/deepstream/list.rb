@@ -24,6 +24,10 @@ module Deepstream
       set(@data) if @data.delete(record_name)
     end
 
+    def keys
+      @data
+    end
+
     def all
       @data.map { |record_name| @client.get(record_name) }
     end

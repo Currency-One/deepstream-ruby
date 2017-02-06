@@ -1,43 +1,49 @@
 # deepstream-ruby
 deepstream.io ruby client
 
-
 ### Install
 
 ```
 gem install deepstream
 ```
 
-
 ### Usage
 ```ruby
-ds = Deepstream::Client.new('localhost')
+ds = Deepstream::Client.new('localhost',
+  autologin: false,
+  verbose: true,
+  credentials: { username: 'John', password: 'Doe' })
+# or
+ds = Deepstream::Client.new('ws://localhost:6020')
+# or
+ds = Deepstream::Client.new('ws://localhost:6020/deepstream')
+
+# log in to the server
+ds.login
+# you can use new credentials too
+ds.login(username: 'John', password: 'betterDoe')
+
+# check if the websocket connection is opened
+ds.connected?
+
+# check if the client is logged in
+ds.logged_in?
 
 # Emit events
 ds.emit 'my_event'
 # or
 ds.emit 'my_event', foo: 'bar', bar: 'foo'
-# or
-ds.emit 'my_event', {foo: 'bar', bar: 'foo'}, timeout: 3
-# or
-ds.emit 'my_event', nil, timeout: 3
-
 
 # Subscribe to events
-ds.on('some_event') do |msg|
+ds.on('some_event') do |event_name, msg|
   puts msg
 end
 
-
 # Get a record
 foo = ds.get('foo')
+bar = ds.get('bar', list: 'bar_list') # get a record within a namespace (this one automatically adds it to a list)
 
-# Get a record with a namespace (automaticly add to a list)
-foo = ds.get_record('foo', list: 'bar') # record can also be accessed by ds.get('bar/foo')
-
-# Update record
-foo.bar = 'bar'
-# or
+# Update a record
 foo.set('bar', 'bar')
 
 # Set the whole record
@@ -46,13 +52,15 @@ foo.set(foo: 'foo', bar: 1)
 # Get a list
 foo = ds.get_list('bar')
 
-# Add to list
+# Add to the list
 foo.add('foo')
 
 # Remove from list
 foo.remove('foo')
 
 # Show record names on the list
+foo.data
+# or
 foo.keys
 
 # Access records on the list

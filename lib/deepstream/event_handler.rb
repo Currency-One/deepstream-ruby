@@ -17,6 +17,8 @@ module Deepstream
         @ack_timeout_registry.add(event, "No ACK message received in time for #{event}")
       end
       @callbacks[event] = block
+    rescue => e
+      @client.on_exception(e)
     end
     alias subscribe on
 
@@ -25,12 +27,16 @@ module Deepstream
       @listeners[pattern] = block
       @client.send_message(TOPIC::EVENT, ACTION::LISTEN, pattern)
       @ack_timeout_registry.add(pattern, "No ACK message received in time for #{pattern}")
+    rescue => e
+      @client.on_exception(e)
     end
 
     def unlisten(pattern)
       pattern = pattern.is_a?(Regexp) ? pattern.source : pattern
       @listeners.delete(pattern)
       @client.send_message(TOPIC::EVENT, ACTION::UNLISTEN, pattern)
+    rescue => e
+      @client.on_exception(e)
     end
 
     def on_message(message)
@@ -45,16 +51,22 @@ module Deepstream
 
     def emit(event, data = nil)
       @client.send_message(TOPIC::EVENT, ACTION::EVENT, event, Helpers.to_deepstream_type(data))
+    rescue => e
+      @client.on_exception(e)
     end
 
     def unsubscribe(event)
       @callbacks.delete(event)
       @client.send_message(TOPIC::EVENT, ACTION::UNSUBSCRIBE, event)
+    rescue => e
+      @client.on_exception(e)
     end
 
     def resubscribe
       @callbacks.keys.each { |event| @client.send_message(TOPIC::EVENT, ACTION::SUBSCRIBE, event) }
       @listeners.keys.each { |pattern| @client.send_message(TOPIC::EVENT, ACTION::LISTEN, pattern) }
+    rescue => e
+      @client.on_exception(e)
     end
 
     private
