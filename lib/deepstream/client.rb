@@ -18,8 +18,7 @@ module Deepstream
 
     execute_block_on_receiver :on, :subscribe, :listen
 
-    def_delegators :@event_handler, :on, :emit, :subscribe, :unsubscribe,
-                   :listen, :resubscribe, :unlisten
+    def_delegators :@event_handler, :on, :emit, :subscribe, :unsubscribe, :listen, :resubscribe, :unlisten
     def_delegators :@error_handler, :error, :on_error
     def_delegators :@record_handler, :get, :set, :delete, :discard, :get_list
 

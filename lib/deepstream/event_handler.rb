@@ -57,6 +57,8 @@ module Deepstream
       @listeners.keys.each { |pattern| @client.send_message(TOPIC::EVENT, ACTION::LISTEN, pattern) }
     end
 
+    private
+
     def fire_event_callback(message)
       event, data = message.data
       data = Helpers.to_type(data)
