@@ -7,7 +7,11 @@ Then(/^the server has (\d+) active connections$/) do |number|
 end
 
 Given(/^the client is initialised$/) do
-  @client = Deepstream::Client.new(CONFIG::ADDRESS, { autologin: false, ack_timeout: CONFIG::ACK_TIMEOUT, debug: true })
+  @client = Deepstream::Client.new(CONFIG::ADDRESS,
+    autologin: false,
+    ack_timeout: CONFIG::ACK_TIMEOUT,
+    debug: true,
+    max_reconnect_attempts: 5)
   @client.sleep(CONFIG::CLIENT_SLEEP)
 end
 
@@ -16,7 +20,10 @@ Then(/^the clients connection state is "([^"]*)"$/) do |state|
   expect(@client.state.to_s.upcase).to eq(state)
 end
 Given(/^the client is initialised with a small heartbeat interval$/) do
-  @client = Deepstream::Client.new(CONFIG::ADDRESS, { autologin: false, heartbeat_interval: 1 })
+  @client = Deepstream::Client.new(CONFIG::ADDRESS,
+    autologin: false,
+    heartbeat_interval: 1,
+    debug: true)
   @client.sleep(CONFIG::CLIENT_SLEEP)
 end
 

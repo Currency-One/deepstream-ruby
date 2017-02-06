@@ -71,7 +71,7 @@ module Deepstream
       @options[:credentials] = credentials
       if @challenge_denied
         on_error("this client's connection was closed")
-      elsif !connected?
+      elsif !connected? && !reconnecting?
         async.connect
       elsif @state == CONNECTION_STATE::AUTHENTICATING
         @login_requested = false
@@ -85,16 +85,20 @@ module Deepstream
 
     def close
       return unless connected?
+      @state = CONNECTION_STATE::CLOSED
       @deliberate_close = true
       @connection.close
       @connection.terminate
-      @state = CONNECTION_STATE::CLOSED
     rescue => e
       @error_handler.on_exception(e)
     end
 
     def connected?
       @state != CONNECTION_STATE::CLOSED
+    end
+
+    def reconnecting?
+      @state == CONNECTION_STATE::RECONNECTING
     end
 
     def logged_in?
@@ -110,9 +114,15 @@ module Deepstream
       if !logged_in? && message.needs_authentication?
         info("Placing message #{message.inspect} in buffer, waiting for connection")
         @message_buffer << message
+        async.connect if @autologin
       else
         info("Sending message: #{message.inspect}")
         @connection.text(message.to_s)
+      end
+    rescue Errno::EPIPE
+      unless reconnecting?
+        @message_buffer << message
+        async.reconnect
       end
     rescue => e
       @error_handler.on_exception(e)
@@ -159,6 +169,7 @@ module Deepstream
       @state = CONNECTION_STATE::OPEN
       @message_buffer.each { |message| send_message(message) }.clear
       every(@options[:heartbeat_interval]) { check_heartbeat } if @options[:heartbeat_interval]
+      resubscribe
     end
 
     def on_rejection
@@ -184,18 +195,24 @@ module Deepstream
     end
 
     def reconnect
+      info('Trying to reconnect to the server.')
       @state = CONNECTION_STATE::RECONNECTING
-      if @failed_reconnect_attempts < @options[:max_reconnect_attempts]
+      if @options[:max_reconnect_attempts].nil? || @failed_reconnect_attempts < @options[:max_reconnect_attempts]
+        @login_requested = true
         connect(@url, true)
-        resubscribe
+        sleep(3)
+        reconnect unless logged_in?
       else
         @state = CONNECTION_STATE::ERROR
       end
-    rescue Errno::ECONNREFUSED
+    rescue Errno::ECONNREFUSED, Errno::ECONNRESET
       @failed_reconnect_attempts += 1
       on_error("Can't connect! Deepstream server unreachable on #{@url}")
+      info("Can't connect. Next attempt in #{reconnect_interval} seconds.")
       sleep(reconnect_interval)
-      reconnect
+      retry
+    rescue => e
+      @exception_handler.on_exception(e)
     end
 
     def reconnect_interval

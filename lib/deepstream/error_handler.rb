@@ -18,7 +18,7 @@ module Deepstream
         else
           message
         end
-      puts @error
+      puts @error unless @client.options[:debug]
     end
 
     def on_exception(exception)
