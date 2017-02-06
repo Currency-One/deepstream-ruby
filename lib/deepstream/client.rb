@@ -51,8 +51,8 @@ module Deepstream
       when TOPIC::EVENT      then @event_handler.on_message(message)
       when TOPIC::ERROR      then @error_handler.on_error(message)
       when TOPIC::RECORD     then @record_handler.on_message(message)
-      when TOPIC::RPC        then raise UnknownTopic('RPC is currently not implemented.')
-      else raise UnknownTopic(message.to_s)
+      when TOPIC::RPC        then raise(UnknownTopic, 'RPC is currently not implemented.')
+      else raise(UnknownTopic, message)
       end
     rescue => e
       @error_handler.on_exception(e)
@@ -138,7 +138,7 @@ module Deepstream
       when ACTION::PING      then on_ping
       when ACTION::REDIRECT  then on_redirection(message)
       when ACTION::REJECTION then on_rejection
-      else raise UnknownAction(message)
+      else raise(UnknownAction, message)
       end
     end
 
@@ -146,7 +146,7 @@ module Deepstream
       case message.action
       when ACTION::ACK   then on_login
       when ACTION::ERROR then on_error(message)
-      else raise UnknownAction(message)
+      else raise(UnknownAction, message)
       end
     end
 
