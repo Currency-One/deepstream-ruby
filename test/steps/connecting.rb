@@ -80,11 +80,11 @@ Then /^the last message the server recieved is (.*)$/ do |message|
 end
 
 Then /^the last login was successful$/ do
-  expect(@client.connected?).to eq(true)
+  expect(@client.logged_in?).to eq(true)
 end
 
 Then /^the last login failed with error message "([^"]*)"$/ do |error|
   @client.sleep(CONFIG::CLIENT_SLEEP)
-  expect(@client.connected?).to eq(false)
+  expect(@client.logged_in?).to eq(false)
   expect(@client.error).to eq(error)
 end

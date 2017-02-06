@@ -1,14 +1,16 @@
 require 'forwardable'
 require 'celluloid/websocket/client'
 require 'deepstream/constants'
+require 'deepstream/error_handler'
 require 'deepstream/event_handler'
 require 'deepstream/record_handler'
 require 'deepstream/helpers'
 require 'deepstream/message'
+require 'deepstream/exceptions'
 
 module Deepstream
   class Client
-    attr_reader :state, :last_hearbeat, :error, :options
+    attr_reader :last_hearbeat, :options, :state
 
     include Celluloid
     include Celluloid::Internals::Logger
@@ -18,20 +20,22 @@ module Deepstream
 
     def_delegators :@event_handler, :on, :emit, :subscribe, :unsubscribe,
                    :listen, :resubscribe, :unlisten
+    def_delegators :@error_handler, :error, :on_error
     def_delegators :@record_handler, :get, :set, :delete, :discard, :get_list
 
     def initialize(url, options = {})
-      @url = Helpers.get_url(url)
-      @connection = connect
+      @url = Helpers.url(url)
+      @error_handler = ErrorHandler.new(self)
       @record_handler = RecordHandler.new(self)
       @event_handler = EventHandler.new(self)
       @options = Helpers.default_options.merge!(options)
       @message_buffer = []
-      @last_hearbeat, @error = nil
+      @last_hearbeat = nil
       @challenge_denied, @login_requested, @deliberate_close = false
       @failed_reconnect_attempts = 0
       @state = CONNECTION_STATE::CLOSED
       Celluloid.logger.level = @options[:verbose] ? LOG_LEVEL::INFO : LOG_LEVEL::OFF
+      async.connect
     end
 
     def on_open
@@ -46,39 +50,97 @@ module Deepstream
       when TOPIC::AUTH       then authentication_message(message)
       when TOPIC::CONNECTION then connection_message(message)
       when TOPIC::EVENT      then @event_handler.on_message(message)
-      when TOPIC::ERROR      then on_error(message)
+      when TOPIC::ERROR      then @error_handler.on_error(message)
       when TOPIC::RECORD     then @record_handler.on_message(message)
-      else on_error(message)
+      when TOPIC::RPC        then raise UnknownTopic('RPC is currently not implemented.')
+      else raise UnknownTopic(message.to_s)
       end
+    rescue => e
+      @error_handler.on_exception(e)
     end
 
     def on_close(code, reason)
       info("Websocket connection closed: #{code.inspect}, #{reason.inspect}")
       @state = CONNECTION_STATE::CLOSED
       reconnect unless @deliberate_close
+    rescue => e
+      @error_handler.on_exception(e)
     end
+
+    def login(credentials = @options[:credentials])
+      @login_requested = true
+      @options[:credentials] = credentials
+      if @challenge_denied
+        on_error("this client's connection was closed")
+      elsif !connected?
+        async.connect
+      elsif @state == CONNECTION_STATE::AUTHENTICATING
+        @login_requested = false
+        send_message(TOPIC::AUTH, ACTION::REQUEST, @options[:credentials].to_json)
+      end
+      self
+    rescue => e
+      @error_handler.on_exception(e)
+      self
+    end
+
+    def close
+      @deliberate_close = true
+      @connection.close
+      @connection.terminate
+      @state = CONNECTION_STATE::CLOSED
+    rescue => e
+      @error_handler.on_exception(e)
+    end
+
+    def connected?
+      @state != CONNECTION_STATE::CLOSED
+    end
+
+    def logged_in?
+      @state == CONNECTION_STATE::OPEN
+    end
+
+    def inspect
+      "#{self.class} #{@url} | connection state: #{@state}"
+    end
+
+    def send_message(*args)
+      message = Message.parse(*args)
+      if !logged_in? && message.needs_authentication?
+        info("Placing message #{message.inspect} in buffer, waiting for connection")
+        @message_buffer << message
+      else
+        info("Sending message: #{message.inspect}")
+        @connection.text(message.to_s)
+      end
+    rescue => e
+      @error_handler.on_exception(e)
+    end
+
+    private
 
     def connection_message(message)
       case message.action
       when ACTION::ACK       then on_connection_ack
-      when ACTION::CHALLENGE then challenge
+      when ACTION::CHALLENGE then on_challenge
       when ACTION::ERROR     then on_error(message)
-      when ACTION::PING      then pong
-      when ACTION::REDIRECT  then redirect(message)
+      when ACTION::PING      then on_ping
+      when ACTION::REDIRECT  then on_redirection(message)
       when ACTION::REJECTION then on_rejection
-      else on_error(message)
+      else raise UnknownAction(message)
       end
     end
 
     def authentication_message(message)
       case message.action
-      when ACTION::ACK then on_login
+      when ACTION::ACK   then on_login
       when ACTION::ERROR then on_error(message)
-      else on_error(message)
+      else raise UnknownAction(message)
       end
     end
 
-    def challenge
+    def on_challenge
       @state = CONNECTION_STATE::CHALLENGING
       send_message(TOPIC::CONNECTION, ACTION::CHALLENGE_RESPONSE, @url)
     end
@@ -88,20 +150,7 @@ module Deepstream
       login if @options[:autologin] || @login_requested
     end
 
-    def login(credentials = @options[:credentials])
-      @options[:credentials] = credentials
-      if @challenge_denied
-        on_error("this client's connection was closed")
-      elsif @state == CONNECTION_STATE::AUTHENTICATING
-        @login_requested = false
-        send_message(TOPIC::AUTH, ACTION::REQUEST, @options[:credentials].to_json)
-      else
-        @login_requested = true
-      end
-      self
-    end
-
-    def pong
+    def on_ping
       @last_heartbeat = Time.now
       send_message(TOPIC::CONNECTION, ACTION::PONG)
     end
@@ -123,19 +172,21 @@ module Deepstream
       on_error('Two connections heartbeats missed successively')
     end
 
-    def redirect(message)
+    def on_redirection(message)
       close
       connect(message.data.last)
     end
 
-    def connect(url = @url)
+    def connect(url = @url, reraise = false)
       @connection = Celluloid::WebSocket::Client.new(url, Actor.current)
+    rescue => e
+      reraise ? raise : @error_handler.on_exception(e)
     end
 
     def reconnect
       @state = CONNECTION_STATE::RECONNECTING
       if @failed_reconnect_attempts < @options[:max_reconnect_attempts]
-        connect
+        connect(@url, true)
         resubscribe
       else
         @state = CONNECTION_STATE::ERROR
@@ -149,40 +200,6 @@ module Deepstream
 
     def reconnect_interval
       [@options[:reconnect_interval] * @failed_reconnect_attempts, @options[:max_reconnect_interval]].min
-    end
-
-    def on_error(message)
-      @error = if message.is_a?(Message)
-        message.topic == TOPIC::ERROR ? message.data : Helpers.to_type(message.data.last)
-      else
-        message
-      end
-    end
-
-    def close
-      @deliberate_close = true
-      @connection.close
-      @connection.terminate
-      @state = CONNECTION_STATE::CLOSED
-    end
-
-    def send_message(*args)
-      message = Message.parse(*args)
-      if !connected? && message.needs_authentication?
-        info("Placing message #{message.inspect} in buffer, waiting for connection")
-        @message_buffer << message
-      else
-        info("Sending message: #{message.inspect}")
-        @connection.text(message.to_s)
-      end
-    end
-
-    def connected?
-      @state == CONNECTION_STATE::OPEN
-    end
-
-    def inspect
-      "#{self.class} #{@url} | connection state: #{@state}"
     end
   end
 end
