@@ -1,5 +1,6 @@
 require 'deepstream/ack_timeout_registry'
 require 'deepstream/constants'
+require 'deepstream/exceptions'
 require 'deepstream/helpers'
 
 module Deepstream
@@ -45,7 +46,7 @@ module Deepstream
       when ACTION::EVENT then fire_event_callback(message)
       when ACTION::SUBSCRIPTION_FOR_PATTERN_FOUND then fire_listen_callback(message)
       when ACTION::SUBSCRIPTION_FOR_PATTERN_REMOVED then fire_listen_callback(message)
-      else @client.on_error(message)
+      else raise(UnknownAction, message)
       end
     end
 

@@ -1,6 +1,7 @@
 require 'deepstream/constants'
-require 'deepstream/record'
+require 'deepstream/exceptions'
 require 'deepstream/list'
+require 'deepstream/record'
 
 module Deepstream
   class RecordHandler
@@ -15,7 +16,7 @@ module Deepstream
       when ACTION::PATCH then patch(message)
       when ACTION::READ then read(message)
       when ACTION::UPDATE then update(message)
-      else @client.on_error(message)
+      else raise(UnknownAction, message)
       end
     end
 
