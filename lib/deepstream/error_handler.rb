@@ -18,13 +18,12 @@ module Deepstream
         else
           message
         end
-      puts @error unless @client.options[:debug]
+      puts "#{@error}\n" unless @client.options[:debug]
     end
 
     def on_exception(exception)
       raise exception if @client.options[:debug]
-      puts exception.message
-      puts exception.backtrace
+      puts "\n#{exception.message}\n#{exception.backtrace}\n"
     end
   end
 end

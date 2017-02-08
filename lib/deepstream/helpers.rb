@@ -39,6 +39,7 @@ module Deepstream
         max_reconnect_attempts: nil,
         max_reconnect_interval: 30,
         reconnect_interval: 1,
+        emit_timeout: 0,
         verbose: false,
         debug: false
       }

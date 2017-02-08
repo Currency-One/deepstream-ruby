@@ -49,8 +49,8 @@ module Deepstream
       end
     end
 
-    def emit(event, data = nil)
-      @client.send_message(TOPIC::EVENT, ACTION::EVENT, event, Helpers.to_deepstream_type(data))
+    def emit(event, data = nil, timeout: @client.options[:emit_timeout])
+      @client.send_message(TOPIC::EVENT, ACTION::EVENT, event, Helpers.to_deepstream_type(data), timeout: timeout)
     rescue => e
       @client.on_exception(e)
     end
