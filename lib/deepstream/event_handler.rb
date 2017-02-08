@@ -1,5 +1,6 @@
 require 'deepstream/ack_timeout_registry'
 require 'deepstream/constants'
+require 'deepstream/exceptions'
 require 'deepstream/helpers'
 
 module Deepstream
@@ -45,12 +46,12 @@ module Deepstream
       when ACTION::EVENT then fire_event_callback(message)
       when ACTION::SUBSCRIPTION_FOR_PATTERN_FOUND then fire_listen_callback(message)
       when ACTION::SUBSCRIPTION_FOR_PATTERN_REMOVED then fire_listen_callback(message)
-      else @client.on_error(message)
+      else raise(UnknownAction, message)
       end
     end
 
-    def emit(event, data = nil, timeout: @client.options[:emit_timeout])
-      @client.send_message(TOPIC::EVENT, ACTION::EVENT, event, Helpers.to_deepstream_type(data), timeout: timeout)
+    def emit(event, data = nil, opts = { timeout: @client.options[:emit_timeout] })
+      @client.send_message(TOPIC::EVENT, ACTION::EVENT, event, Helpers.to_deepstream_type(data), timeout: opts[:timeout])
     rescue => e
       @client.on_exception(e)
     end
