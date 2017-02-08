@@ -28,6 +28,7 @@ module Deepstream
       end
       @records[name] ||= Record.new(@client, name)
     end
+    alias get_record get
 
     def get_list(name)
       @records[name] ||= List.new(@client, name)
