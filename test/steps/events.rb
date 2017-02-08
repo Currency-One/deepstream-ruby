@@ -23,7 +23,8 @@ end
 
 When /^the connection to the server is reestablished$/ do
   ($server = StubServer.new).remove_connections
-  sleep(3)
+  sleep(5)
+  expect(@client.connected?).to eq(true)
 end
 
 Then /^the client received the event "([^"]*)" with data "([^"]*)"$/ do |event, data|
