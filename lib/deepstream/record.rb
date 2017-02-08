@@ -50,6 +50,11 @@ module Deepstream
       @data = JSON.parse(data)
     end
 
+    def method_missing(name, *args)
+      return @data.fetch(name.to_s, nil) if args.empty?
+      raise(NoMethodError, name)
+    end
+
     private
 
     def set_path(data, path, value)
