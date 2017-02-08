@@ -126,7 +126,7 @@ module Deepstream
 
     def unable_to_send_message(message)
       @state = CONNECTION_STATE::CLOSED if logged_in?
-      unless message.delayed?
+      unless message.expired?
         info("Placing a message #{message.inspect} in the buffer, waiting for authentication")
         @message_buffer << message
       end
@@ -170,7 +170,7 @@ module Deepstream
 
     def on_login
       @state = CONNECTION_STATE::OPEN
-      @message_buffer.each { |message| send_message(message) unless message.delayed? }.clear
+      @message_buffer.each { |message| send_message(message) unless message.expired? }.clear
       every(@options[:heartbeat_interval]) { check_heartbeat } if @options[:heartbeat_interval]
       resubscribe
     end

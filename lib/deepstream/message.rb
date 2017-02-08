@@ -32,7 +32,7 @@ module Deepstream
       ![TOPIC::CONNECTION, TOPIC::AUTH].include?(@topic)
     end
 
-    def delayed?
+    def expired?
       @sending_deadline && @sending_deadline < Time.now
     end
   end
