@@ -9,7 +9,8 @@ module Deepstream
     def initialize(client, name)
       @client = client
       @name = name
-      @data, @version = nil
+      @data = {}
+      @version = nil
       @client.send_message(TOPIC::RECORD, ACTION::CREATEORREAD, @name)
     end
 
