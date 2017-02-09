@@ -8,7 +8,7 @@ module Deepstream
     end
 
     def add(record_name)
-      set(@data.length.to_s, record_name) unless @data.include?(record_name)
+      set(@data << record_name) unless @data.include?(record_name)
     end
 
     def read(version, data)
