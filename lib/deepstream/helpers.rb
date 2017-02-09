@@ -8,6 +8,7 @@ module Deepstream
 
     def self.to_deepstream_type(value)
       case value
+      when Array then "O#{value.to_json}"
       when Hash then "O#{value.to_json}"
       when String then "S#{value}"
       when Numeric then "N#{value}"
@@ -50,6 +51,15 @@ module Deepstream
         url.prepend(SCHEME) unless url.start_with?(SCHEME)
         url.concat(":#{DEFAULT_PORT}") unless url[/\:\d+/]
         url.concat("/#{DEFAULT_PATH}") unless url[/\/\w+$/]
+      end
+    end
+
+    def self.message_data(*args, **kwargs)
+      kwargs = kwargs.empty? ? nil : kwargs
+      if args.empty?
+        kwargs
+      else
+        (args << kwargs).compact.instance_eval { one? ? first : self }
       end
     end
   end

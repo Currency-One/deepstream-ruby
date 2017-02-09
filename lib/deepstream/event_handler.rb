@@ -50,8 +50,9 @@ module Deepstream
       end
     end
 
-    def emit(event, data = nil, opts = { timeout: @client.options[:emit_timeout] })
-      @client.send_message(TOPIC::EVENT, ACTION::EVENT, event, Helpers.to_deepstream_type(data), timeout: opts[:timeout])
+    def emit(event, *args, timeout: @client.options[:emit_timeout], **kwargs)
+      data = Helpers.message_data(*args, **kwargs)
+      @client.send_message(TOPIC::EVENT, ACTION::EVENT, event, Helpers.to_deepstream_type(data), timeout: timeout)
     rescue => e
       @client.on_exception(e)
     end
@@ -74,8 +75,7 @@ module Deepstream
 
     def fire_event_callback(message)
       event, data = message.data
-      data = Helpers.to_type(data)
-      Celluloid::Future.new { @callbacks[event].call(event, data) }
+      Celluloid::Future.new { @callbacks[event].call(Helpers.to_type(data)) }
     end
 
     def fire_listen_callback(message)

@@ -35,9 +35,7 @@ ds.emit 'my_event'
 ds.emit 'my_event', foo: 'bar', bar: 'foo'
 
 # Subscribe to events
-ds.on('some_event') do |event_name, msg|
-  puts msg
-end
+ds.on('some_event') { |data| puts data }
 
 # Get a record
 foo = ds.get('foo')

@@ -1,6 +1,9 @@
 Given /^the client subscribes to an event named "([^"]*)"$/ do |event|
   @last_event, @event_data = nil
-  @client.on(event) { |*args| @last_event, @last_event_data = args }
+  @client.on(event) do |data|
+    @last_event = event
+    @last_event_data = data
+  end
 end
 
 When /^the client listens to events matching "([^"]*)"$/ do |pattern|
