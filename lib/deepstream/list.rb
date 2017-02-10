@@ -8,7 +8,12 @@ module Deepstream
     end
 
     def add(record_name)
-      set(@data << record_name) unless @data.include?(record_name)
+      unless @data.include?(record_name)
+        @data << record_name
+        set
+      end
+    rescue => e
+      @client.on_exception(e)
     end
 
     def read(version, data)
@@ -21,7 +26,7 @@ module Deepstream
     end
 
     def remove(record_name)
-      set(@data) if @data.delete(record_name)
+      set if @data.delete(record_name)
     end
 
     def keys
@@ -30,6 +35,12 @@ module Deepstream
 
     def all
       @data.map { |record_name| @client.get(record_name) }
+    end
+
+    private
+
+    def set
+      @client.send_message(TOPIC::RECORD, ACTION::UPDATE, @name, (@version += 1), @data.to_json) if @version
     end
   end
 end
