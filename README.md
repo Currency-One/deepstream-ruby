@@ -44,17 +44,18 @@ ds.logged_in?
 ```
 ### Events
 ```ruby
-ds.emit 'my_event'
+# emit an event
+ds.emit('my_event')
 # or
-ds.emit 'my_event', foo: 'bar', bar: 'foo'
+ds.emit('my_event', foo: 'bar', bar: 'foo')
 # or
-ds.emit 'my_event', foo: 'bar', bar: 'foo', timeout: 10
+ds.emit('my_event', foo: 'bar', bar: 'foo', timeout: 10) # emit with a custom timeout
 # subscribe to events
 ds.on('my_event') { |data| puts data }
 ```
 ### Records
 ```ruby
-# Get a record
+# get a record
 # list is an optional argument; when given, the client adds the record to a list with given name
 foo = ds.get('foo', list: 'bar')
 # or
@@ -64,7 +65,7 @@ foo.set('bar', 'bar') # update 'bar' attribute
 # or
 foo.bar = 'bar'
 # or set the whole record data at once
-foo.set('bar' => 'bar', 'baz' => 'baz')
+foo.set(bar: 'bar', baz: 'baz')
 ```
 ### Lists
 ```ruby

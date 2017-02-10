@@ -28,6 +28,7 @@ module Deepstream
 
     def set(*args)
       if args.one?
+        raise(ArgumentError, "Record data must be a hash") unless args.first.is_a?(Hash)
         @data = args.first
         @client.send_message(TOPIC::RECORD, ACTION::UPDATE, @name, (@version += 1), @data.to_json) if @version
       elsif args.size == 2
@@ -58,15 +59,16 @@ module Deepstream
     end
 
     def method_missing(name, *args)
-      return @data.fetch(name.to_s, nil) if args.empty?
-      return set(name[0..-2], *args) if name[-1] == '=' && !args.empty?
+      name = name.to_s
+      return @data.fetch(name, nil) if args.empty?
+      return set(name[0..-2], *args) if name.end_with?('=') && !args.empty?
       raise(NoMethodError, name)
     end
 
     private
 
     def set_path(data, path, value)
-      key, subkey = path.split('.', 2)
+      key, subkey = path.to_s.split('.', 2)
       if data.is_a?(Hash)
         subkey ? set_path(data.fetch(key), subkey, value) : data[key] = value
       elsif data.is_a?(Array)
