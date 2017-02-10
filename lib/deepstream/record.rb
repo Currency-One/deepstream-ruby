@@ -35,6 +35,8 @@ module Deepstream
         set_path(@data, path, value)
         @client.send_message(TOPIC::RECORD, ACTION::PATCH, @name, (@version += 1), path, Helpers.to_deepstream_type(value)) if @version
       end
+    rescue => e
+      @client.on_exception(e)
     end
 
     def read(version, data)
@@ -44,15 +46,20 @@ module Deepstream
     def patch(version, path, value)
       @version = version.to_i
       set_path(@data, path, Helpers.to_type(value))
+    rescue => e
+      @client.on_exception(e)
     end
 
     def update(version, data)
       @version = version.to_i
       @data = JSON.parse(data)
+    rescue => e
+      @client.on_exception(e)
     end
 
     def method_missing(name, *args)
       return @data.fetch(name.to_s, nil) if args.empty?
+      return set(name[0..-2], *args) if name[-1] == '=' && !args.empty?
       raise(NoMethodError, name)
     end
 
