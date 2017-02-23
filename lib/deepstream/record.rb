@@ -4,14 +4,16 @@ require 'deepstream/helpers'
 
 module Deepstream
   class Record
-    attr_reader :name, :data, :version
-
     def initialize(client, name)
       @client = client
       @name = name
       @data = {}
       @version = nil
       @client.send_message(TOPIC::RECORD, ACTION::CREATEORREAD, @name)
+    end
+
+    def get_name
+      @name
     end
 
     def inspect
@@ -27,7 +29,7 @@ module Deepstream
     end
 
     def set(*args)
-      if args.one?
+      if args.size == 1
         raise(ArgumentError, "Record data must be a hash") unless args.first.is_a?(Hash)
         @data = args.first
         @client.send_message(TOPIC::RECORD, ACTION::UPDATE, @name, (@version += 1), @data.to_json) if @version
