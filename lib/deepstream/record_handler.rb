@@ -21,7 +21,7 @@ module Deepstream
     end
 
     def get(name, list: nil)
-      name = name.to_s
+      name = name.dup.to_s
       if list
         name.prepend("#{list}/")
         @records[list] ||= List.new(@client, list)
