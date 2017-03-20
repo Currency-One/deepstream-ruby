@@ -3,15 +3,15 @@ require 'pry'
 require_relative '../../lib/deepstream'
 
 module CONFIG
-  IP = 'localhost'
-  PORT = 7777
-  SECOND_PORT = 8888
-  ADDRESS = "ws://#{IP}:#{PORT}/deepstream"
-  MESSAGE_TIMEOUT = 5
-  ACK_TIMEOUT = 3
-  CLIENT_SLEEP = 0.2
-  MESSAGE_PART_SEPARATOR = '|'
-  MESSAGE_SEPARATOR = '+'
+  IP ||= 'localhost'
+  PORT ||= 7777
+  SECOND_PORT ||= 8888
+  ADDRESS ||= "ws://#{IP}:#{PORT}/deepstream"
+  MESSAGE_TIMEOUT ||= 5
+  ACK_TIMEOUT ||= 3
+  CLIENT_SLEEP ||= 0.2
+  MESSAGE_PART_SEPARATOR ||= '|'
+  MESSAGE_SEPARATOR ||= '+'
 end
 
 def outgoing_message(message)
