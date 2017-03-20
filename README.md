@@ -82,3 +82,10 @@ foo.keys
 # get records from the list
 foo.all
 ```
+
+
+### Development
+
+```bash
+git submodule update --init --recursive
+```

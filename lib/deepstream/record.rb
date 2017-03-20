@@ -62,7 +62,7 @@ module Deepstream
 
     def method_missing(name, *args)
       name = name.to_s
-      return @data.fetch(name, nil) if args.empty?
+      return @data.fetch(@data.is_a?(Array) ? name.to_i : name, nil) if args.empty?
       return set(name[0..-2], *args) if name.end_with?('=') && !args.empty?
       raise(NoMethodError, name)
     end

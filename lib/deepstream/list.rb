@@ -21,7 +21,7 @@ module Deepstream
       data = JSON.parse(data)
       if data.is_a?(Array)
         @data.concat(data).uniq!
-        set(@data) if @data.size > data.size
+        set if @data.size > data.size
       end
     end
 
