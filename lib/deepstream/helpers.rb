@@ -48,7 +48,7 @@ module Deepstream
 
     def self.url(url)
       url.tap do |url|
-        url.prepend(SCHEME) unless url.start_with?(SCHEME)
+        url.prepend(SCHEME) unless url.start_with?(/ws(s|)\:\/\//)
         url.concat(":#{DEFAULT_PORT}") unless url[/\:\d+/]
         url.concat("/#{DEFAULT_PATH}") unless url[/\/\w+$/]
       end
