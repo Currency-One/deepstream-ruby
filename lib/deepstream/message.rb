@@ -16,11 +16,13 @@ module Deepstream
       @sending_deadline = Time.now + timeout if timeout
       @topic, @action = args.take(2).map(&:to_sym)
       @data = args.drop(2)
+    rescue
+      ''
     end
 
     def to_s
       args = [@topic, @action]
-      args << @data unless @data.empty?
+      args << @data unless (@data.nil? || @data.empty?)
       args.join(MESSAGE_PART_SEPARATOR).concat(MESSAGE_SEPARATOR)
     end
 

@@ -4,7 +4,7 @@ module Deepstream
   module Helpers
     SCHEME = 'ws://'
     DEFAULT_PORT = 6020
-    DEFAULT_PATH = 'deepstream'
+    DEFAULT_PATH = 'deepstream-v3'
 
     def self.to_deepstream_type(value)
       case value
@@ -34,13 +34,9 @@ module Deepstream
     def self.default_options
       {
         ack_timeout: nil,
-        autologin: true,
         credentials: {},
         heartbeat_interval: nil,
-        max_reconnect_attempts: nil,
-        max_reconnect_interval: 30,
-        reconnect_interval: 1,
-        emit_timeout: 0,
+        in_thread: true,
         verbose: false,
         debug: false
       }
