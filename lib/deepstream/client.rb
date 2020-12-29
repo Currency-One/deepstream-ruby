@@ -36,6 +36,7 @@ module Deepstream
       @state = CONNECTION_STATE::CLOSED
       @verbose = @options[:verbose]
       @log = Async.logger
+      @never_connected_before = true
       connect
     end
 
@@ -46,7 +47,7 @@ module Deepstream
 
     def on_message(data)
       message = Message.new(data)
-      puts "receiving msg = #{message.inspect}" if @verbose
+      @log.info "Receiving msg = #{message.inspect}" if @verbose
       case message.topic
       when TOPIC::AUTH       then authentication_message(message)
       when TOPIC::CONNECTION then connection_message(message)
@@ -86,7 +87,7 @@ module Deepstream
       return if connected?
       @deliberate_close = false
       @state = CONNECTION_STATE::RECONNECTING
-      log.info 'Reconnecting' if @verbose
+      @log.info 'Reconnecting' if @verbose
     end
 
     def connected?
@@ -107,12 +108,8 @@ module Deepstream
 
     def send_message(*args, priority: false)
       message = Message.parse(*args)
-      return unable_to_send_message(message) if !logged_in? && message.needs_authentication?
-      if priority
-        @message_buffer.unshift(message)
-      else
-        @message_buffer.push(message)
-      end
+      return unable_to_send_message(message, priority) if !logged_in? && message.needs_authentication?
+      priority ? @message_buffer.unshift(message) : @message_buffer.push(message)
     rescue Errno::EPIPE
       unable_to_send_message(message)
     rescue => e
@@ -121,11 +118,11 @@ module Deepstream
 
     private
 
-    def unable_to_send_message(message)
+    def unable_to_send_message(message, priority)
       @state = CONNECTION_STATE::CLOSED if logged_in?
       unless message.expired?
        @log.info("Placing a message #{message.inspect} in the buffer, waiting for authentication") if @verbose
-        @message_buffer << message
+       priority ? @message_buffer.unshift(message) : @message_buffer.push(message)
       end
     end
 
@@ -156,7 +153,8 @@ module Deepstream
 
     def on_connection_ack
       @state = CONNECTION_STATE::AUTHENTICATING
-      #### TODO: reinitialize recordhandler ####
+      @message_buffer.delete_if { |msg| msg.action == ACTION::PATCH }
+      @record_handler.reinitialize unless @never_connected_before
       login
     end
 
@@ -166,6 +164,7 @@ module Deepstream
     end
 
     def on_login
+      @never_connected_before = false
       @state = CONNECTION_STATE::OPEN
       every(@options[:heartbeat_interval]) { check_heartbeat } if @options[:heartbeat_interval]
       resubscribe
@@ -224,10 +223,10 @@ module Deepstream
         @task.async do
           loop do
             break if ( connection.closed? || @deliberate_close )
-            while !@message_buffer.empty?
+            while !@message_buffer.empty? && (logged_in? || !@message_buffer[0].needs_authentication?)
               msg = @message_buffer.shift
               encoded_msg = msg.to_s.encode(Encoding::UTF_8)
-              puts "sending msg = #{msg.inspect}" if @verbose
+              @log.info "Sending msg = #{msg.inspect}" if @verbose
               connection.write(encoded_msg)
               connection.flush rescue @message_buffer.unshift(msg)
             end

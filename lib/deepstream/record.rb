@@ -9,11 +9,35 @@ module Deepstream
       @name = name
       @data = {}
       @version = nil
+      @is_reinitializing = false
+      @data_cache = {}
       @client.send_message(TOPIC::RECORD, ACTION::CREATEORREAD, @name)
     end
 
     def get_name
       @name
+    end
+
+    def reset_version
+      @version = 0
+    end
+
+    def is_reinitializing?
+      @is_reinitializing
+    end
+
+    def start_reinitializing
+      @is_reinitializing = true
+      @data_cache = @data
+      @client.send_message(TOPIC::RECORD, ACTION::CREATEORREAD, @name, priority: true)
+    end
+
+    def end_reinitializing
+      reset_version
+      @data_cache.map do |k,v|
+        set(k, v)
+      end
+      @is_reinitializing = false
     end
 
     def inspect
