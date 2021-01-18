@@ -37,6 +37,12 @@ module Deepstream
       @data.map { |record_name| @client.get(record_name) }
     end
 
+    def end_reinitializing
+      reset_version
+      set
+      @is_reinitializing = false
+    end
+
     private
 
     def set
