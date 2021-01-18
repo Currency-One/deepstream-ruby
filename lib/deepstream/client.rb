@@ -32,7 +32,6 @@ module Deepstream
       @message_buffer = []
       @last_hearbeat = nil
       @challenge_denied, @@deliberate_close = false
-      @failed_reconnect_attempts = 0
       @state = CONNECTION_STATE::CLOSED
       @verbose = @options[:verbose]
       @log = Async.logger
@@ -106,12 +105,15 @@ module Deepstream
       "#{self.class} #{@url} | connection state: #{@state}"
     end
 
-    def send_message(*args, priority: false)
+    def send_message(*args, **kwargs)
       message = Message.parse(*args)
+      priority = kwargs[:priority] || false
+      timeout = message.topic == TOPIC::EVENT ? kwargs[:timeout] : nil
+      message.set_timeout(timeout) if timeout
       return unable_to_send_message(message, priority) if !logged_in? && message.needs_authentication?
       priority ? @message_buffer.unshift(message) : @message_buffer.push(message)
     rescue Errno::EPIPE
-      unable_to_send_message(message)
+      unable_to_send_message(message, priority)
     rescue => e
       on_exception(e)
     end
@@ -225,6 +227,7 @@ module Deepstream
             break if ( connection.closed? || @deliberate_close )
             while !@message_buffer.empty? && (logged_in? || !@message_buffer[0].needs_authentication?)
               msg = @message_buffer.shift
+              next if message.expired?
               encoded_msg = msg.to_s.encode(Encoding::UTF_8)
               @log.info "Sending msg = #{msg.inspect}" if @verbose
               connection.write(encoded_msg)
