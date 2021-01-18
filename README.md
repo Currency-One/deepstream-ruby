@@ -1,6 +1,7 @@
 # deepstream-ruby
 
 deepstream.io ruby client
+deepstream version >5 needed
 
 [![Gem Version](https://badge.fury.io/rb/deepstream.svg)](http://badge.fury.io/rb/deepstream)
 [![Gem License](https://img.shields.io/badge/license-Apache-blue.svg)](https://github.com/Currency-One/deepstream-ruby/blob/master/LICENSE)
@@ -19,19 +20,16 @@ ds = Deepstream::Client.new('localhost')
 # or
 ds = Deepstream::Client.new('ws://localhost:6020')
 # or
-ds = Deepstream::Client.new('ws://localhost:6020/deepstream',
+ds = Deepstream::Client.new('ws://localhost:6020/deepstream-v3',
   ack_timeout: nil, # ACK timeout; if nil, then the client never checks ACK timeout errors
-  autologin: false, # authorise the client when a Websocket connection is initialized; you don't need to call login() then
   credentials: { username: 'John', password: 'Doe' }, # credentials used to authorise the client
   heartbeat_interval: nil # when two server heartbeats are missed the client considers the connection to be lost
-  max_reconnect_attempts: nil,
-  max_reconnect_interval: 30, # seconds
-  reconnect_interval: 1, # seconds, the final interval is a lower number from (reconnect_interval * failed_attempts, max_reconnect_interval)
   emit_timeout: 0, # if 0, then events that failed to be emitted are thrown away
                    # if nil, then events are stored in a buffer, waiting for reconnection
                    # if another number, then events are stored in a buffer and sent if the client reconnects in emit_timeout seconds
   verbose: false, # show verbose information about connection, incoming and outgoing messages etc.
-  debug: false # use for testing only; if true, any exception will terminate the client
+  debug: false, # use for testing only; if true, any exception will terminate the client
+  in_thread: true # if true, putting client in separated thread
   )
 # log in to the server
 ds.login
@@ -84,8 +82,13 @@ foo.all
 ```
 
 
-### Development
+## Development
 
 ```bash
 git submodule update --init --recursive
 ```
+
+
+## To Do
+
+Adjust tests, to work with new version (without celluloid)
