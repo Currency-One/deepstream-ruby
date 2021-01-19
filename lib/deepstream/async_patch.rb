@@ -13,7 +13,7 @@ module Async
         ensure
           client.close
         end
-			end
+      end
 
       def self.connect(endpoint, *args, **options, &block)
         self.open(endpoint, *args) do |client|
