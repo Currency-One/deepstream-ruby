@@ -10,6 +10,13 @@ module Deepstream
       @records = {}
     end
 
+    def reinitialize
+      @records.map do |record|
+        name, rec = record
+        rec.start_reinitializing
+      end
+    end
+
     def on_message(message)
       case message.action
       when ACTION::ACK then nil
@@ -55,6 +62,7 @@ module Deepstream
 
     def read(message)
       name, *data = message.data
+      return @records[name].end_reinitializing if @records[name]&.is_reinitializing?
       @records[name]&.read(*data)
     end
 

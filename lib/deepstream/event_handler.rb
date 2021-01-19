@@ -14,7 +14,7 @@ module Deepstream
 
     def on(event, &block)
       unless @callbacks[event]
-        @client.send_message(TOPIC::EVENT, ACTION::SUBSCRIBE, event)
+        @client.send_message(TOPIC::EVENT, ACTION::SUBSCRIBE, event) if @client.state == CONNECTION_STATE::OPEN
         @ack_timeout_registry.add(event, "No ACK message received in time for #{event}")
       end
       @callbacks[event] = block
@@ -75,7 +75,7 @@ module Deepstream
 
     def fire_event_callback(message)
       event, data = message.data
-      Celluloid::Future.new { @callbacks[event].call(Helpers.to_type(data)) }
+      @callbacks[event].call(Helpers.to_type(data))
     end
 
     def fire_listen_callback(message)

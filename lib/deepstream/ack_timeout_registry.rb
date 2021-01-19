@@ -7,11 +7,15 @@ module Deepstream
 
     def add(name, message)
       return unless (timeout = @client.options[:ack_timeout])
-      @timeouts[name] = Celluloid.after(timeout) { @client.on_error(message) }
+      @timeouts[name] = Thread.new do
+        sleep timeout
+        @client.on_error(message)
+      end
     end
 
     def cancel(name)
-      @timeouts.delete(name)&.cancel
+      @timeouts[name].exit rescue nil
+      @timeouts.delete(name)
     end
   end
 end
