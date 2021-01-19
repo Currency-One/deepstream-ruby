@@ -4,6 +4,7 @@ $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 
 Gem::Specification.new do |spec|
   spec.name          = "deepstream"
+  spec.version       = "1.0.0"
   spec.version       = "0.3.2"
   spec.authors       = ["Currency-One S.A."]
   spec.email         = ["piotr.szczudlak@currency-one.com"]
@@ -19,7 +20,11 @@ Gem::Specification.new do |spec|
   spec.require_paths = ["lib"]
   spec.required_ruby_version = '>= 2.3.0'
   spec.license       = "Apache-2.0"
-  spec.add_runtime_dependency 'celluloid-websocket-client', '~> 0'
+  spec.add_runtime_dependency 'async', '~> 1.25.0'
+  spec.add_runtime_dependency 'async/io/stream', '~> 1.29.0'
+  spec.add_runtime_dependency 'async/http/endpoint', '~> 0.52.1'
+  spec.add_runtime_dependency 'async/websocket/client', '~> 0.14.0'
+  spec.add_runtime_dependency 'async/logger'
   spec.add_development_dependency 'cucumber'
   spec.add_development_dependency 'reel'
   spec.add_development_dependency 'pry'
