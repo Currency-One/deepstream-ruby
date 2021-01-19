@@ -1,4 +1,4 @@
-require 'deepstream/record'
+require_relative './record'
 
 module Deepstream
   class List < Record

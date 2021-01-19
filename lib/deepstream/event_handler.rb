@@ -1,7 +1,7 @@
-require 'deepstream/ack_timeout_registry'
-require 'deepstream/constants'
-require 'deepstream/exceptions'
-require 'deepstream/helpers'
+require_relative './ack_timeout_registry'
+require_relative './constants'
+require_relative './exceptions'
+require_relative './helpers'
 
 module Deepstream
   class EventHandler

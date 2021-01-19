@@ -34,7 +34,7 @@ module Async
 end
 
 module Protocol
-	module WebSocket
+  module WebSocket
     class TextFrame
 
       def unpack

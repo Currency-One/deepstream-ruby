@@ -1,5 +1,5 @@
 require 'json'
-require 'deepstream/constants'
+require_relative './constants'
 
 module Deepstream
   class Message

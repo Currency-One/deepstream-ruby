@@ -1,6 +1,6 @@
-require 'deepstream/constants'
-require 'deepstream/helpers'
-require 'deepstream/message'
+require_relative './constants'
+require_relative './helpers'
+require_relative './message'
 
 module Deepstream
   class ErrorHandler
