@@ -4,14 +4,14 @@ require 'async/io/stream'
 require 'async/http/endpoint'
 require 'async/websocket/client'
 require 'async/logger'
-require 'deepstream/constants'
-require 'deepstream/error_handler'
-require 'deepstream/event_handler'
-require 'deepstream/record_handler'
-require 'deepstream/helpers'
-require 'deepstream/message'
-require 'deepstream/exceptions'
-require 'deepstream/async_patch'
+require_relative './constants'
+require_relative './error_handler'
+require_relative './event_handler'
+require_relative './record_handler'
+require_relative './helpers'
+require_relative './message'
+require_relative './exceptions'
+require_relative './async_patch'
 
 module Deepstream
   class Client
@@ -227,7 +227,7 @@ module Deepstream
             break if ( connection.closed? || @deliberate_close )
             while !@message_buffer.empty? && (logged_in? || !@message_buffer[0].needs_authentication?)
               msg = @message_buffer.shift
-              next if message.expired?
+              next if msg.expired?
               encoded_msg = msg.to_s.encode(Encoding::UTF_8)
               @log.info "Sending msg = #{msg.inspect}" if @verbose
               connection.write(encoded_msg)

@@ -1,7 +1,7 @@
-require 'deepstream/constants'
-require 'deepstream/exceptions'
-require 'deepstream/list'
-require 'deepstream/record'
+require_relative './constants'
+require_relative './exceptions'
+require_relative './list'
+require_relative './record'
 
 module Deepstream
   class RecordHandler

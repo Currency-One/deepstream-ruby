@@ -11,4 +11,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-require 'deepstream/client'
+require_relative './deepstream/client'

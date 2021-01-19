@@ -1,6 +1,6 @@
 require 'json'
-require 'deepstream/constants'
-require 'deepstream/helpers'
+require_relative './constants'
+require_relative './helpers'
 
 module Deepstream
   class Record
