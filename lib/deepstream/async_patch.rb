@@ -44,14 +44,3 @@ module Async
     end
   end
 end
-
-module Protocol
-  module WebSocket
-    class TextFrame
-
-      def unpack
-        encoded_readed_string = super.encode(Encoding::UTF_8)
-      end
-    end
-  end
-end
