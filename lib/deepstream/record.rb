@@ -4,6 +4,8 @@ require_relative './helpers'
 
 module Deepstream
   class Record
+    attr_reader :data
+
     def initialize(client, name)
       @client = client
       @name = name
@@ -12,6 +14,7 @@ module Deepstream
       @is_reinitializing = false
       @data_cache = {}
       @client.send_message(TOPIC::RECORD, ACTION::CREATEORREAD, @name)
+      @ready_callback = nil
     end
 
     def reset_version
@@ -60,8 +63,16 @@ module Deepstream
       @client.on_exception(e)
     end
 
+    def when_ready(&block)
+      @ready_callback = block
+    end
+
     def read(version, data)
       update(version, data)
+      if @ready_callback
+        @ready_callback.call(self)
+        @ready_callback = nil
+      end
     end
 
     def patch(version, path, value)

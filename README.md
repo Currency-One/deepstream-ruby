@@ -79,6 +79,9 @@ foo.data
 foo.keys
 # get records from the list
 foo.all
+# callbacks
+foo.on(:added) { |record|  }
+foo.on(:removed) { |record|  }
 ```
 
 
