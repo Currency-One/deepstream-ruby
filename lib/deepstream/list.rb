@@ -90,8 +90,8 @@ module Deepstream
     def notify_listeners(cb_name, uid)
       (@handlers[cb_name] || []).each do |proc|
         record = @client.get(uid)
-        if record.version
-          proc.call()
+        if record.__version
+          proc.call(record)
         else
           record.when_ready(&proc)
         end

@@ -17,6 +17,14 @@ module Deepstream
       @ready_callback = nil
     end
 
+    def __version
+      @version
+    end
+
+    def __name
+      @name
+    end
+
     def reset_version
       @version = 0
     end
