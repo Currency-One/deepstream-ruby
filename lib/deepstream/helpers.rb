@@ -38,7 +38,8 @@ module Deepstream
         heartbeat_interval: nil,
         in_thread: true,
         verbose: false,
-        debug: false
+        debug: false,
+        reinitialize_master: false
       }
     end
 
