@@ -34,8 +34,9 @@ module Deepstream
       @challenge_denied, @@deliberate_close = false
       @state = CONNECTION_STATE::CLOSED
       @verbose = @options[:verbose]
+      @reinitialize_master = @options[:reinitialize_master]
       @log = Async.logger
-      @never_connected_before = true
+      @connected_before = false
       connect
     end
 
@@ -156,7 +157,7 @@ module Deepstream
     def on_connection_ack
       @state = CONNECTION_STATE::AUTHENTICATING
       @message_buffer.delete_if { |msg| msg.action == ACTION::PATCH }
-      @record_handler.reinitialize unless @never_connected_before
+      @record_handler.reinitialize if @connected_before
       login
     end
 
@@ -166,7 +167,7 @@ module Deepstream
     end
 
     def on_login
-      @never_connected_before = false
+      @connected_before = true
       @state = CONNECTION_STATE::OPEN
       every(@options[:heartbeat_interval]) { check_heartbeat } if @options[:heartbeat_interval]
       resubscribe

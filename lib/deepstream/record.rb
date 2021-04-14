@@ -40,8 +40,8 @@ module Deepstream
     end
 
     def end_reinitializing
-      reset_version
-      set(@data_cache)
+      reset_version if @client.options[:reinitialize_master]
+      set(@data_cache) if @client.options[:reinitialize_master]
       @is_reinitializing = false
     end
 
