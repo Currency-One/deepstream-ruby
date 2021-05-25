@@ -32,6 +32,7 @@ module Deepstream
       if list
         name.prepend("#{list}/")
         @records[list] ||= List.new(@client, list)
+        sleep 0.1 while @records[list].version.nil?
         @records[list].add(name)
       end
       @records[name] ||= Record.new(@client, name)

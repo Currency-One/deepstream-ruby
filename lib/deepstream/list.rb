@@ -5,6 +5,8 @@ module Deepstream
   class List < Record
     LIST_CALLBACKS = %i{added removed}
 
+    attr_reader :version
+
     def initialize(*args)
       super
       @data = []
@@ -15,7 +17,7 @@ module Deepstream
       unless @data.include?(record_name)
         @data << record_name
         set
-        notify_listeners(:removed, record_name)
+        notify_listeners(:added, record_name)
       end
     rescue => e
       @client.on_exception(e)
